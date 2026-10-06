@@ -1,0 +1,3 @@
+# Los checksums de Prisma se calculan sobre los bytes del archivo:
+# fuerza LF para que coincidan en cualquier SO
+*.sql text eol=lf
