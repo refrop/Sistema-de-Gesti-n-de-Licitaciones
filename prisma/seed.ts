@@ -19,6 +19,18 @@ async function main() {
   });
 
   console.log(`Admin listo: ${admin.email} (id=${admin.id})`);
+
+  const demoEmail = process.env.SEED_USER_EMAIL ?? "user@example.com";
+  const demoPassword = process.env.SEED_USER_PASSWORD ?? password;
+  const demoHash = await bcrypt.hash(demoPassword, 10);
+
+  const demo = await prisma.user.upsert({
+    where: { email: demoEmail },
+    update: { name: "Usuario Demo", passwordHash: demoHash, role: "user", active: true },
+    create: { email: demoEmail, name: "Usuario Demo", passwordHash: demoHash, role: "user", active: true },
+  });
+
+  console.log(`Usuario demo listo: ${demo.email} (id=${demo.id})`);
 }
 
 main()
