@@ -5,7 +5,7 @@ Archivos de evidencia del proyecto. Guardar cada uno en cuanto se genere (no esp
 | Archivo | Descripción | Estado |
 |---|---|---|
 | `evidencia-correo.png` | Captura del correo de envío (fase 5) con el PDF adjunto (inbox o Spam) | ✅ |
-| `evidencia-cron-correo.png` | Captura de los correos de recordatorio del cron (fase 7, inbox o Spam) | ⏳ pendiente |
+| `evidencia-cron-correo.png` | Captura de los correos de recordatorio del cron (fase 7, inbox o Spam) | ✅ |
 | `evidencia-e2e.png` | Prueba E2E completa en producción | ⏳ fase 10 |
 
 ## Cómo generar la evidencia del envío

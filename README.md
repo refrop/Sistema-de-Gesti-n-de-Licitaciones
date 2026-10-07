@@ -424,7 +424,7 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | Evidencia | Estado |
 |---|---|
 | Correo de envío con el PDF adjunto (inbox/Spam, fase 5) | ✅ `docs/evidencia-correo.png` |
-| Correo de recordatorio del cron (inbox/Spam, fase 7) | ⏳ captura pendiente → `docs/evidencia-cron-correo.png` |
+| Correo de recordatorio del cron (inbox/Spam, fase 7) | ✅ `docs/evidencia-cron-correo.png` |
 | `EmailLog` del envío real (providerId `01a116ae-eb87-786f-bdb9-e442a34f0cba`, estado `enviado`) | ✅ verificado en producción |
 | Documento accesible por URL pública (HTTP 200, `application/pdf`) | ✅ [`Propuesta_Evidencia_Fase_5.pdf`](https://tcrjekibvnzjnbxdebto.supabase.co/storage/v1/object/public/proposals/tenders/ec4dda0d-e4d6-4883-bfbb-39fc0c813a41/1791381921609-Propuesta_Evidencia_Fase_5.pdf) |
 | Prueba E2E en producción (checklist del enunciado) | ⏳ fase 10 |
