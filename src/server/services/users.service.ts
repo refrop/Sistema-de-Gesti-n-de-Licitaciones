@@ -36,6 +36,13 @@ export async function listUsers(query: ListQuery) {
   return { data, ...listMeta(total, query) };
 }
 
+export async function listUsersBrief() {
+  return db.user.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}
+
 export async function createUser(
   input: { email: string; name: string; password: string; role: "admin" | "user" },
   actorId: string,

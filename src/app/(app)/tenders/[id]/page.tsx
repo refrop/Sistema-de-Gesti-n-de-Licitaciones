@@ -3,9 +3,12 @@ import { notFound } from "next/navigation";
 import { DomainError } from "@/server/domain/errors";
 import { listProducts } from "@/server/services/products.service";
 import { getTender } from "@/server/services/tenders.service";
+import { listUsersBrief } from "@/server/services/users.service";
 import { serializeTender, type SerializedTender } from "@/lib/tender-serialize";
 import { ActionsPanel } from "./actions-panel";
+import { CyclePanel } from "./cycle-panel";
 import { DetailHeader } from "./detail-header";
+import { HistoryPanel } from "./history-panel";
 import { ProductsPanel } from "./products-panel";
 import { Totals } from "./totals";
 
@@ -44,16 +47,21 @@ export default async function TenderDetailPage({
     sku: product.sku,
     basePrice: String(product.basePrice),
   }));
+  const users = await listUsersBrief();
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
       <DetailHeader tender={tender} />
       <Totals tender={tender} />
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2">
           <ProductsPanel tender={tender} options={options} />
+          <HistoryPanel tender={tender} users={users} />
         </div>
-        <ActionsPanel tender={tender} />
+        <div className="space-y-6">
+          <ActionsPanel tender={tender} />
+          <CyclePanel tender={tender} />
+        </div>
       </div>
     </div>
   );

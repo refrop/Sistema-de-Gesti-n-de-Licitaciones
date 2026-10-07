@@ -22,13 +22,15 @@ export function formatMoney(value: number | string | { toString(): string }): st
   return moneyFmt.format(Number.isFinite(n) ? n : 0);
 }
 
-export function formatDateTime(value: string | Date): string {
+export function formatDateTime(value: string | Date | null | undefined): string {
+  if (!value) return "—";
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "—";
   return dateFmt.format(date);
 }
 
-export function formatDate(value: string | Date): string {
+export function formatDate(value: string | Date | null | undefined): string {
+  if (!value) return "—";
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "—";
   return dayFmt.format(date);
