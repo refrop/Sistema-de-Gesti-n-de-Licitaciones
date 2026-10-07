@@ -3,6 +3,7 @@ import { db } from "../src/server/lib/db";
 import { transition } from "../src/server/services/tender.service";
 
 let clientId = "";
+let demoTenderId = "";
 const suffix = Date.now();
 
 beforeAll(async () => {
@@ -13,8 +14,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db.tender.deleteMany({ where: { clientId } });
-  await db.client.delete({ where: { id: clientId } });
+  await db.tender.deleteMany({ where: { clientId, id: { not: demoTenderId } } });
   await db.$disconnect();
 });
 
@@ -72,6 +72,7 @@ describe("transition()", () => {
 
   it("camino completo deja el historial ordenado", async () => {
     const tender = await newTender("Licitación camino completo");
+    demoTenderId = tender.id;
     await db.$transaction((tx) => transition(tx, tender.id, "activa", null, "manual"));
     await db.$transaction((tx) =>
       transition(tx, tender.id, "finalizada", null, "manual"),
