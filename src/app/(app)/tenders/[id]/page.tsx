@@ -4,6 +4,7 @@ import { DomainError } from "@/server/domain/errors";
 import { listProducts } from "@/server/services/products.service";
 import { getTender } from "@/server/services/tenders.service";
 import { serializeTender, type SerializedTender } from "@/lib/tender-serialize";
+import { ActionsPanel } from "./actions-panel";
 import { DetailHeader } from "./detail-header";
 import { ProductsPanel } from "./products-panel";
 import { Totals } from "./totals";
@@ -48,7 +49,12 @@ export default async function TenderDetailPage({
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
       <DetailHeader tender={tender} />
       <Totals tender={tender} />
-      <ProductsPanel tender={tender} options={options} />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ProductsPanel tender={tender} options={options} />
+        </div>
+        <ActionsPanel tender={tender} />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { readJsonBody } from "../guard";
+import { DomainError } from "../../domain/errors";
 import {
   createTenderSchema,
   tenderListQuerySchema,
@@ -23,6 +24,7 @@ import {
   confirmSchema,
   createUploadUrl,
   confirmUpload,
+  uploadProposal,
 } from "../../services/proposal.service";
 import { sendTender } from "../../services/tender-send.service";
 
@@ -75,6 +77,25 @@ export const tenderRoutes = new Hono()
     const body = await readJsonBody(c, confirmSchema);
     const tender = await confirmUpload(c.req.param("id"), body.path, c.get("user").id);
     return c.json(tender);
+  })
+  .post("/api/tenders/:id/proposal/upload", async (c) => {
+    const contentType = c.req.header("content-type") ?? "";
+    if (!contentType.includes("application/pdf")) {
+      throw new DomainError(
+        "VALIDATION",
+        "El cuerpo debe ser el PDF (Content-Type: application/pdf)",
+      );
+    }
+    const headerName = c.req.header("x-file-name");
+    const fileName = headerName ? decodeURIComponent(headerName) : "propuesta.pdf";
+    const body = Buffer.from(await c.req.arrayBuffer());
+    const tender = await uploadProposal(
+      c.req.param("id"),
+      body,
+      fileName,
+      c.get("user").id,
+    );
+    return c.json(tender, 201);
   })
   .post("/api/tenders/:id/send", async (c) => {
     const tender = await sendTender(c.req.param("id"), c.get("user").id);

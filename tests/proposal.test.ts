@@ -194,3 +194,72 @@ describe("validaciones de confirm", () => {
     });
   });
 });
+
+describe("POST /api/tenders/:id/proposal/upload (proxy por la API)", () => {
+  const uploadPath = (id: string) => `/api/tenders/${id}/proposal/upload`;
+
+  it("401 sin sesión", async () => {
+    const tender = await newTender();
+    const res = await app.request(uploadPath(tender.id), {
+      method: "POST",
+      headers: { "Content-Type": "application/pdf", "x-file-name": "a.pdf" },
+      body: PDF,
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("400 si el Content-Type no es application/pdf", async () => {
+    const tender = await newTender();
+    const res = await app.request(uploadPath(tender.id), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: PDF,
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe("VALIDATION");
+  });
+
+  it("400 si el cuerpo no es un PDF real", async () => {
+    const tender = await newTender();
+    const res = await app.request(uploadPath(tender.id), {
+      method: "POST",
+      headers: { "Content-Type": "application/pdf", "x-file-name": "a.pdf", Cookie: cookie },
+      body: Buffer.from("hola, no soy un pdf"),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("201 sube, sanea el nombre y guarda el documento en la licitación", async () => {
+    const tender = await newTender();
+    const res = await app.request(uploadPath(tender.id), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/pdf",
+        "x-file-name": "Informe (final).pdf",
+        Cookie: cookie,
+      },
+      body: PDF,
+    });
+    expect(res.status).toBe(201);
+    const updated = await res.json();
+    createdPaths.push(updated.proposalPath);
+
+    expect(updated.proposalPath.startsWith(`tenders/${tender.id}/`)).toBe(true);
+    expect(updated.proposalSize).toBe(PDF.length);
+    expect(updated.proposalName).toBe("Informe_final.pdf");
+    expect(updated.proposalUrl).toContain(env.SUPABASE_BUCKET);
+    expect(await fileInfo(updated.proposalPath)).not.toBeNull();
+  });
+
+  it("409 si la licitación ya no está en borrador", async () => {
+    const tender = await newTender();
+    await db.tender.update({ where: { id: tender.id }, data: { status: "activa" } });
+    const res = await app.request(uploadPath(tender.id), {
+      method: "POST",
+      headers: { "Content-Type": "application/pdf", "x-file-name": "a.pdf", Cookie: cookie },
+      body: PDF,
+    });
+    expect(res.status).toBe(409);
+  });
+});

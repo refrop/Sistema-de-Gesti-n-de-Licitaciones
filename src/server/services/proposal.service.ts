@@ -6,6 +6,7 @@ import {
   fileInfo,
   publicUrl,
   removeFile,
+  uploadPdf,
 } from "../lib/storage";
 
 export const MAX_PROPOSAL_SIZE = 10 * 1024 * 1024;
@@ -21,6 +22,13 @@ export type UploadUrlInput = z.infer<typeof uploadUrlSchema>;
 export const confirmSchema = z.object({
   path: z.string().min(1, "path obligatorio"),
 });
+
+const PDF_MAGIC = "%PDF-";
+
+function looksLikePdf(body: Buffer): boolean {
+  const head = body.subarray(0, 1024).toString("latin1");
+  return head.includes(PDF_MAGIC);
+}
 
 function sanitizeFileName(raw: string): string {
   const base = raw.split(/[\\/]/).pop() ?? "propuesta.pdf";
@@ -106,4 +114,35 @@ export async function confirmUpload(tenderId: string, path: string, userId: stri
   }
 
   return updated;
+}
+
+/**
+ * Sube el PDF directamente por nuestra API (proxy): el navegador no dispone
+ * de una credencial valida para firmar URLs de subida en Supabase Storage.
+ */
+export async function uploadProposal(
+  tenderId: string,
+  body: Buffer,
+  fileName: string,
+  userId: string,
+) {
+  await requireBorrador(tenderId);
+  if (body.length === 0) {
+    throw new DomainError("VALIDATION", "El documento esta vacio");
+  }
+  if (body.length > MAX_PROPOSAL_SIZE) {
+    throw new DomainError("VALIDATION", "El documento supera el maximo de 10 MB");
+  }
+  if (!looksLikePdf(body)) {
+    throw new DomainError("VALIDATION", "El documento debe ser un PDF (application/pdf)");
+  }
+
+  const path = `tenders/${tenderId}/${Date.now()}-${sanitizeFileName(fileName)}`;
+  await uploadPdf(path, body);
+  try {
+    return await confirmUpload(tenderId, path, userId);
+  } catch (err) {
+    await removeFile(path).catch(() => undefined);
+    throw err;
+  }
 }

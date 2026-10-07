@@ -15,10 +15,15 @@ export const app = new OpenAPIHono().onError(onError);
 
 const PUBLIC_PATHS = new Set(["/api/health", "/api/spike", "/api/auth/login", "/api/cron/tick"]);
 
+// La subida del PDF llega con Content-Type application/pdf (no JSON). Un sitio
+// cruzado no puede emitir ese tipo desde un form, asi que el content-type hace
+// de proteccion CSRF; la sesion sigue exigiendose abajo.
+const RAW_UPLOAD_PATH = /^\/api\/tenders\/[^/]+\/proposal\/upload$/;
+
 app.use("*", async (c, next) => {
   if (c.req.method !== "GET" && c.req.method !== "HEAD") {
     const contentType = c.req.header("content-type") ?? "";
-    if (!contentType.includes("application/json")) {
+    if (!RAW_UPLOAD_PATH.test(c.req.path) && !contentType.includes("application/json")) {
       throw new DomainError(
         "VALIDATION",
         "Las mutaciones requieren Content-Type: application/json",
