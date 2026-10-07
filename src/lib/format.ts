@@ -9,8 +9,8 @@ const dateFmt = new Intl.DateTimeFormat("es-PE", {
 });
 const dayFmt = new Intl.DateTimeFormat("es-PE", { year: "numeric", month: "short", day: "2-digit" });
 
-export function formatMoney(value: number | string): string {
-  const n = typeof value === "string" ? Number(value) : value;
+export function formatMoney(value: number | string | { toString(): string }): string {
+  const n = Number(typeof value === "object" ? value.toString() : value);
   return moneyFmt.format(Number.isFinite(n) ? n : 0);
 }
 
