@@ -15,18 +15,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api, errorMessage } from "@/lib/api";
+import { toDateTimeLocalValue } from "@/lib/format";
 import { cleanFormValues, fieldErrors, tenderFormSchema } from "@/lib/forms";
 
 type ClientOption = { id: string; name: string };
 
-function toLocalInput(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 export function TenderForm({ clients }: { clients: ClientOption[] }) {
   const router = useRouter();
-  const now = useMemo(() => toLocalInput(new Date()), []);
+  const now = useMemo(() => toDateTimeLocalValue(new Date()), []);
   const [values, setValues] = useState({
     clientId: clients[0]?.id ?? "",
     title: "",

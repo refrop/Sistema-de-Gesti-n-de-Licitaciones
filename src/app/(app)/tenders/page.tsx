@@ -95,7 +95,11 @@ export default async function TendersPage({
             ) : (
               tenders.data.map((tender) => (
                 <TableRow key={tender.id}>
-                  <TableCell className="font-medium">{tender.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link href={`/tenders/${tender.id}`} className="hover:underline">
+                      {tender.title}
+                    </Link>
+                  </TableCell>
                   <TableCell>{tender.client.name}</TableCell>
                   <TableCell>{formatMoney(tender.maxBudget)}</TableCell>
                   <TableCell>
