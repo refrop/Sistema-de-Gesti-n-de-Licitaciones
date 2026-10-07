@@ -1,0 +1,62 @@
+{
+  "evidencia": "Jobs de la Fase 7 ejecutados en producción (2026-10-07)",
+  "endpoint": "GET https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/cron/tick",
+  "auth": "Authorization: Bearer <CRON_SECRET> (mismo valor en .env local y en Vercel)",
+  "ticks": [
+    {
+      "n": 1,
+      "date": "Wed, 07 Oct 2026 15:26:43 GMT",
+      "response": { "expired": 0, "reminded": 2, "errors": [], "time": "2026-10-07T15:26:42.440Z" },
+      "nota": "Recordatorio real enviado a ambas licitaciones activas dentro de la ventana de 48 h (A vence en ~3 min, B en ~47 h). Los dos correos quedan con status=enviado y providerId de Resend."
+    },
+    {
+      "n": 2,
+      "date": "Wed, 07 Oct 2026 15:29:28 GMT",
+      "response": { "expired": 1, "reminded": 0, "errors": [], "time": "2026-10-07T15:29:27.984Z" },
+      "nota": "Pasado el deadline de A: vencimiento automático. reminded=0 confirma la idempotencia del recordatorio (B no se recuerda dos veces)."
+    }
+  ],
+  "licitacion_A_vencimiento": {
+    "id": "b090308f-ce4d-453b-afad-74a32a14af2f",
+    "title": "Evidencia cron A - vencimiento",
+    "deadline": "2026-10-07T15:29:19.546Z",
+    "status_final": "perdida",
+    "transicion_vencimiento": {
+      "fromStatus": "activa",
+      "toStatus": "perdida",
+      "userId": null,
+      "reason": "vencimiento_automatico",
+      "createdAt": "2026-10-07T15:29:28.028Z"
+    }
+  },
+  "licitacion_B_recordatorio": {
+    "id": "3ff95d67-fb59-48c5-99c9-bfa62d1d4111",
+    "title": "Evidencia cron B - recordatorio",
+    "deadline": "2026-10-09T14:26:26.074Z",
+    "status_final": "activa",
+    "reminderSentAt": "2026-10-07T15:26:42.440Z"
+  },
+  "email_logs": [
+    {
+      "tenderId": "3ff95d67-fb59-48c5-99c9-bfa62d1d4111",
+      "type": "recordatorio",
+      "toEmail": "refropg@gmail.com",
+      "status": "enviado",
+      "providerId": "01a116f9-5a51-7562-9937-d1a79e9453ed",
+      "createdAt": "2026-10-07T15:26:42.877Z"
+    },
+    {
+      "tenderId": "b090308f-ce4d-453b-afad-74a32a14af2f",
+      "type": "recordatorio",
+      "toEmail": "refropg@gmail.com",
+      "status": "enviado",
+      "providerId": "01a116f9-5af6-785f-8cb5-c0c948b00ada",
+      "createdAt": "2026-10-07T15:26:43.013Z"
+    }
+  ],
+  "notas": [
+    "Los dos correos de recordatorio llegan a refropg@gmail.com (revisar inbox/Spam) → captura pendiente: evidencia-cron-correo.png",
+    "cron-job.org: configuración manual pendiente (cada 15 min contra el mismo endpoint y secret).",
+    "Respaldo diario en vercel.json (08:00 UTC) con Authorization: Bearer $CRON_SECRET."
+  ]
+}
