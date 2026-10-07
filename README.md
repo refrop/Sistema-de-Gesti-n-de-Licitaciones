@@ -423,11 +423,10 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 
 | Evidencia | Estado |
 |---|---|
-| Correo de envío con adjunto (inbox/Spam) | ⏳ captura pendiente → `docs/evidencia-correo.png` |
+| Correo recibido con adjunto (inbox/Spam) | ⏳ captura pendiente → `docs/evidencia-correo.png` |
 | `EmailLog` del envío real (providerId `01a116ae-eb87-786f-bdb9-e442a34f0cba`) | ✅ texto en `docs/emaillog-envio-fase5.json` |
 | Documento accesible por URL real (HTTP 200, `application/pdf`) | ✅ URL en `docs/emaillog-envio-fase5.json` |
-| Ticks del cron en producción: recordatorio real + vencimiento automático | ✅ `docs/evidencia-cron.json` (ver §8) |
-| Correo de recordatorio recibido (inbox/Spam) | ⏳ captura pendiente → `docs/evidencia-cron-correo.png` |
+| Log del cron en producción | ⏳ fase 7 → `docs/evidencia-cron.png` |
 | Prueba E2E en producción (checklist del enunciado) | ⏳ fase 10 |
 
 ## 13. Limitaciones conocidas y pendientes
