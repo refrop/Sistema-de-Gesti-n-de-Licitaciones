@@ -49,6 +49,7 @@
 }
 
 :root {
+  --font-sans: var(--font-geist-sans);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -115,6 +116,28 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-split-line] {
+    opacity: 0;
+  }
+  .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  .divider-anim {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+}
+
+.login-fallback {
+  background-color: #06080f;
+  background-image:
+    radial-gradient(1100px 750px at 72% 18%, rgb(38 130 150 / 0.28), transparent 62%),
+    radial-gradient(950px 720px at 18% 82%, rgb(96 62 178 / 0.24), transparent 66%),
+    radial-gradient(700px 520px at 50% 46%, rgb(24 52 92 / 0.55), transparent 72%);
 }
 
 @layer base {
