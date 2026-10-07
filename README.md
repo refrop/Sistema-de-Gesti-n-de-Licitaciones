@@ -2,7 +2,7 @@
 
 ## 1. Encabezado y acceso rápido
 
-Gestión de licitaciones de principio a fin: creación de propuestas con productos y presupuesto, documento PDF en Supabase Storage, envío real por correo con adjunto, máquina de estados con historial y trazabilidad completa de correos. Backend desplegado en Vercel y conectado a Supabase; frontend pendiente (fases 8-9).
+Gestión de licitaciones de principio a fin: creación de propuestas con productos y presupuesto, documento PDF en Supabase Storage, envío real por correo con adjunto, máquina de estados con historial y trazabilidad completa de correos. Backend y frontend (login + layout autenticado + listados/alta) desplegados en Vercel sobre Supabase; detalle de licitación y panel de próximas a vencer pendientes (fase 9).
 
 **Demo:** https://sistema-de-gesti-n-de-licitaciones.vercel.app · **Health:** [/api/health](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/health) · **Docs API:** `/api/docs` ⏳ (fase 9)
 
@@ -24,7 +24,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | 5 | Documento (signed URL) y envío real con adjunto + `EmailLog` + idempotencia | ✅ |
 | 6 | Facturación y pagos transaccionales (auto-`cobrada`) | ✅ |
 | 7 | Jobs de vencimiento y recordatorio, `/api/cron/tick` en producción | ✅ |
-| 8 | Frontend: login, layout, formularios de clientes/productos/usuarios | ⏳ pendiente |
+| 8 | Frontend: login con nebulosa, layout autenticado, listados + alta de clientes/productos/usuarios/licitaciones | ✅ |
 | 9 | Detalle de licitación, panel de próximas a vencer, `/api/docs` | ⏳ pendiente |
 | 10 | Evidencias, E2E en producción, limpieza final | ⏳ pendiente |
 
@@ -34,7 +34,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 
 | Pieza | Versión | Por qué |
 |---|---|---|
-| Next.js | 15.5 | Frontend (fases 8-9) y host de la API en un solo runtime; tipos compartidos cliente/servidor |
+| Next.js | 15.5 | Frontend (App Router, fases 8-9) y host de la API en un solo runtime; tipos compartidos cliente/servidor |
 | Hono + `@hono/zod-openapi` | 4.13 / 1.6 | API ultraligera con middleware reutilizable y base para Swagger (`/api/docs`, pendiente) |
 | Prisma | 6.19 | ORM tipado, migraciones versionadas y `Decimal` para dinero |
 | Supabase (Postgres) | — | BD gestionada con pooler; migraciones vía `DIRECT_URL` |
@@ -50,20 +50,49 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 ### Estructura de carpetas
 
 ```
-app/                        # Next.js (App Router) — frontend pendiente fases 8-9
 src/
+  app/
+    login/                  # pantalla oscura con nebulosa WebGL + GSAP/ScrollTrigger
+    (app)/                  # layout autenticado (nav, sesión, logout)
+      tenders/              # listado con filtros + /tenders/new
+      clients/ products/ users/   # listado con búsqueda/paginación + alta en diálogo
+  components/
+    ui/                     # shadcn/ui (button, dialog, select, table, sonner…)
+    atmos/                  # nebulosa, split-lines, reveal (three + gsap)
+    nav.tsx                 # header sticky, rol, logout
+    page-header.tsx         # título + descripción + acción, con reveal
+    search-input.tsx        # búsqueda con debounce que sincroniza ?q=
+    pagination-bar.tsx      # paginación que conserva los filtros actuales
+    empty-state.tsx, tender-status-badge.tsx
+  lib/
+    api.ts                  # fetch con CSRF (Content-Type json), ApiError, errorMessage
+    format.ts               # es-PE: dinero (PEN), fechas y hora con zona
+    forms.ts                # schemas zod del cliente (login, cliente, producto, usuario, licitación)
+    session.ts              # getSessionUser() (cookie → JWT → BD)
+    tender-status.ts        # etiquetas/orden de estados
+  middleware.ts             # gate de sesión y de rol admin (jose, edge)
   server/
     api/                    # Hono: routes/, middleware/ (auth, errores), guard.ts
     services/               # Toda la lógica de negocio; únicos que tocan Prisma
     domain/                 # Puro, sin I/O: state-machine.ts, errors.ts
     lib/                    # db, env, email, storage, pagination, html
-  app/page.tsx              # Página actual (placeholder)
 prisma/                     # schema.prisma, migrations/, seed.ts
 tests/                      # Vitest (9 archivos, 83 tests)
 scripts/                    # db-report, send-evidence, cron-evidence, check-transitions
 docs/                       # Evidencias (ver §12)
 .env.example
 ```
+
+### Pantallas (fase 8)
+
+| Ruta | Contenido | Guard |
+|---|---|---|
+| `/login` | Formulario + nebulosa WebGL (fallback CSS con `prefers-reduced-motion`); redirige a `/tenders` | pública (si ya hay sesión → redirect) |
+| `/tenders` | Listado con búsqueda, filtro por estado y cliente, badges de estado y paginación | sesión |
+| `/tenders/new` | Alta con select de cliente, presupuesto y fecha límite futura | sesión |
+| `/clients`, `/products` | Listado con búsqueda/paginación + alta en diálogo | sesión |
+| `/users` | Listado con rol/estado + alta en diálogo | sesión + `admin` (revalidado también en la página) |
+| `/` | Redirect a `/tenders` | sesión |
 
 **Regla de capas:** `routes` solo parsean/validan y llaman a `services`. `services` contienen la lógica y son los únicos que tocan Prisma. `domain` es puro (sin I/O).
 
@@ -134,7 +163,7 @@ Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
 | `SUPABASE_BUCKET` | Bucket de Storage (`proposals`) |
 | `RESEND_API_KEY` | API key de Resend |
 | `EMAIL_FROM` | Remitente (`onboarding@resend.dev` sin dominio verificado) |
-| `CRON_SECRET` / `REMINDER_HOURS` | ⏳ (fase 7) secreto del endpoint cron y horas de recordatorio |
+| `CRON_SECRET` / `REMINDER_HOURS` | Secreto del endpoint cron y horas de recordatorio |
 | `APP_URL` | URL base (local o producción) |
 
 ### Supabase
@@ -417,6 +446,8 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 
 **No se automatiza:** el correo real y el tick de cron-job.org en producción (se verifican a mano con las evidencias de §12).
 
+**Frontend (fase 8):** cada pantalla se verificó con un smoke E2E en Playwright contra `next start` (login → crear → buscar/filtrar → logout), revisando además capturas y que no hubiera errores JS ni respuestas 5xx. Los scripts son temporales y no se versionan; la suite automatizada de Vitest sigue siendo solo backend.
+
 ## 12. Evidencias
 
 Índice en [`docs/`](docs/README.md).
@@ -428,12 +459,13 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | `EmailLog` del envío real (providerId `01a116ae-eb87-786f-bdb9-e442a34f0cba`, estado `enviado`) | ✅ verificado en producción |
 | Documento accesible por URL pública (HTTP 200, `application/pdf`) | ✅ [`Propuesta_Evidencia_Fase_5.pdf`](https://tcrjekibvnzjnbxdebto.supabase.co/storage/v1/object/public/proposals/tenders/ec4dda0d-e4d6-4883-bfbb-39fc0c813a41/1791381921609-Propuesta_Evidencia_Fase_5.pdf) |
 | Prueba E2E en producción (checklist del enunciado) | ⏳ fase 10 |
+| Frontend fase 8 (login, layout, 5 listados + alta) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 
 ## 13. Limitaciones conocidas y pendientes
 
 **Pendientes por fase (ver tabla de §1):**
 
-- **Fases 8-9:** frontend completo, panel de próximas a vencer, `/api/docs` (Swagger).
+- **Fase 9:** frontend del detalle de licitación, panel de próximas a vencer, `/api/docs` (Swagger).
 - **Fase 10:** E2E en producción, limpieza y credenciales.
 
 **Limitaciones asumidas hoy:**
