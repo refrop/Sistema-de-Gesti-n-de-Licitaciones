@@ -19,6 +19,7 @@ import { formatDateTime, formatMoney } from "@/lib/format";
 import { listClients } from "@/server/services/clients.service";
 import { listTenders, tenderListQuerySchema } from "@/server/services/tenders.service";
 import { TenderFilters } from "./filters";
+import { ExpiringPanel } from "./expiring-panel";
 
 export const metadata: Metadata = { title: "Licitaciones" };
 
@@ -56,6 +57,8 @@ export default async function TendersPage({
           </Button>
         }
       />
+
+      <ExpiringPanel />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <SearchInput placeholder="Buscar por título o descripción…" />
