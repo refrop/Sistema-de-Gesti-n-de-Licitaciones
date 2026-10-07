@@ -8,6 +8,7 @@ import { authRoutes } from "./routes/auth";
 import { userRoutes } from "./routes/users";
 import { clientRoutes } from "./routes/clients";
 import { productRoutes } from "./routes/products";
+import { tenderRoutes } from "./routes/tenders";
 
 export const app = new OpenAPIHono().onError(onError);
 
@@ -33,5 +34,6 @@ app.route("/", authRoutes);
 app.route("/", userRoutes);
 app.route("/", clientRoutes);
 app.route("/", productRoutes);
+app.route("/", tenderRoutes);
 
 export type AppType = typeof app;
