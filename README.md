@@ -2,9 +2,9 @@
 
 ## 1. Encabezado y acceso rápido
 
-Gestión de licitaciones de principio a fin: creación de propuestas con productos y presupuesto, documento PDF en Supabase Storage, envío real por correo con adjunto, máquina de estados con historial y trazabilidad completa de correos. Backend y frontend (login + layout autenticado + listados/alta) desplegados en Vercel sobre Supabase; detalle de licitación y panel de próximas a vencer pendientes (fase 9).
+Gestión de licitaciones de principio a fin: creación de propuestas con productos y presupuesto, documento PDF en Supabase Storage, envío real por correo con adjunto, máquina de estados con historial y trazabilidad completa de correos. Backend y frontend desplegados en Vercel sobre Supabase: login, layout, listados/alta, **detalle de licitación** (productos, totales, documento, envío, ciclo completo, historial y correos) y **panel de próximas a vencer**. `/api/docs` queda como último paso de la fase 9.
 
-**Demo:** https://sistema-de-gesti-n-de-licitaciones.vercel.app · **Health:** [/api/health](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/health) · **Docs API:** `/api/docs` ⏳ (fase 9)
+**Demo:** https://sistema-de-gesti-n-de-licitaciones.vercel.app · **Health:** [/api/health](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/health) · **Docs API:** `/api/docs` ⏳ (último paso de la fase 9)
 
 **Credenciales demo (solo evaluación, cámbialas en cualquier entorno real):**
 
@@ -25,7 +25,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | 6 | Facturación y pagos transaccionales (auto-`cobrada`) | ✅ |
 | 7 | Jobs de vencimiento y recordatorio, `/api/cron/tick` en producción | ✅ |
 | 8 | Frontend: login con nebulosa, layout autenticado, listados + alta de clientes/productos/usuarios/licitaciones | ✅ |
-| 9 | Detalle de licitación, panel de próximas a vencer, `/api/docs` | ⏳ pendiente |
+| 9 | Detalle de licitación (productos, totales, documento, envío, ciclo, historial/correos), panel de próximas a vencer, `/api/docs` | ✅ detalle y panel · ⏳ `/api/docs` |
 | 10 | Evidencias, E2E en producción, limpieza final | ⏳ pendiente |
 
 ---
@@ -54,7 +54,8 @@ src/
   app/
     login/                  # pantalla oscura con nebulosa WebGL + GSAP/ScrollTrigger
     (app)/                  # layout autenticado (nav, sesión, logout)
-      tenders/              # listado con filtros + /tenders/new
+      tenders/              # listado con filtros + panel de vencer + /tenders/new
+        [id]/               # detalle: cabecera, totales, productos, documento/envío, ciclo, historial
       clients/ products/ users/   # listado con búsqueda/paginación + alta en diálogo
   components/
     ui/                     # shadcn/ui (button, dialog, select, table, sonner…)
@@ -66,10 +67,12 @@ src/
     empty-state.tsx, tender-status-badge.tsx
   lib/
     api.ts                  # fetch con CSRF (Content-Type json), ApiError, errorMessage
-    format.ts               # es-PE: dinero (PEN), fechas y hora con zona
+    format.ts               # es-PE: dinero (PEN), fechas con timeZone America/Lima, tamaño de archivo
+    money.ts                # dinero en centavos enteros (validación de presupuesto/saldo en cliente)
     forms.ts                # schemas zod del cliente (login, cliente, producto, usuario, licitación)
     session.ts              # getSessionUser() (cookie → JWT → BD)
     tender-status.ts        # etiquetas/orden de estados
+    tender-serialize.ts     # Decimal/Date → string para pasar props del servidor al cliente
   middleware.ts             # gate de sesión y de rol admin (jose, edge)
   server/
     api/                    # Hono: routes/, middleware/ (auth, errores), guard.ts
@@ -77,19 +80,20 @@ src/
     domain/                 # Puro, sin I/O: state-machine.ts, errors.ts
     lib/                    # db, env, email, storage, pagination, html
 prisma/                     # schema.prisma, migrations/, seed.ts
-tests/                      # Vitest (9 archivos, 83 tests)
+tests/                      # Vitest (10 archivos, 96 tests)
 scripts/                    # db-report, send-evidence, cron-evidence, check-transitions
 docs/                       # Evidencias (ver §12)
 .env.example
 ```
 
-### Pantallas (fase 8)
+### Pantallas (fases 8-9)
 
 | Ruta | Contenido | Guard |
 |---|---|---|
 | `/login` | Formulario + nebulosa WebGL (fallback CSS con `prefers-reduced-motion`); redirige a `/tenders` | pública (si ya hay sesión → redirect) |
-| `/tenders` | Listado con búsqueda, filtro por estado y cliente, badges de estado y paginación | sesión |
+| `/tenders` | Listado con búsqueda, filtro por estado y cliente, badges de estado y paginación; **arriba, panel de licitaciones activas que vencen en 3 días** (enlaza al detalle) | sesión |
 | `/tenders/new` | Alta con select de cliente, presupuesto y fecha límite futura | sesión |
+| `/tenders/:id` | **Detalle:** cabecera con estado/fecha/presupuesto, tarjetas de totales (productos, facturado, pagado, saldo), tabla de productos con alta/baja y validación de presupuesto en centavos, subida del PDF, botón de envío, ciclo (ganada/perdida, facturar, cobrar) e historial de estados + pagos + correos | sesión |
 | `/clients`, `/products` | Listado con búsqueda/paginación + alta en diálogo | sesión |
 | `/users` | Listado con rol/estado + alta en diálogo | sesión + `admin` (revalidado también en la página) |
 | `/` | Redirect a `/tenders` | sesión |
@@ -144,7 +148,7 @@ npm install                 # ejecuta prisma generate (postinstall)
 npx prisma migrate dev      # crea el schema
 npx prisma db seed          # admin + usuario demo
 npm run dev                 # http://localhost:3000
-npm test                    # 83 tests
+npm test                    # 96 tests
 ```
 
 Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
@@ -253,6 +257,7 @@ Todo lo que cambia de estado pasa por aquí: es la única puerta y el historial 
 | Regla | Dónde se aplica | Error |
 |---|---|---|
 | Σ (cantidad × precio) ≤ `maxBudget`, con `Decimal` (límite exacto OK, +1 centavo no) | `addProduct` / upsert en `tender-products.service.ts` | `422 BUDGET_EXCEEDED` |
+| El mismo tope se anticipa en el cliente con **centavos enteros** (`src/lib/money.ts`, sin `number` de coma flotante) | `products-panel.tsx` (aviso en vivo y bloqueo del alta) | aviso local, sin petición |
 | Productos solo editables en `borrador`/`activa` | `tender-products.service.ts` | `409 NOT_EDITABLE` |
 | Documento solo modificable en `borrador` | `proposal.service.ts` (`requireBorrador`) | `409 NOT_EDITABLE` |
 | `deadline` futura y `maxBudget > 0` al crear | `createTender` | `400 VALIDATION` |
@@ -340,6 +345,7 @@ sequenceDiagram
 | DELETE | `/api/tenders/:id/products/:productId` | auth | Quita producto | 401/404/409 |
 | POST | `/api/tenders/:id/proposal/upload-url` | auth | Signed URL para subir PDF | 400/401/404/409 |
 | POST | `/api/tenders/:id/proposal/confirm` | auth | Confirma documento (valida Storage) | 400/401/404/409 |
+| POST | `/api/tenders/:id/proposal/upload` | auth | **Sube el PDF por la API** (body binario, `Content-Type: application/pdf`, header `x-file-name`) | 400/401/404/409 |
 | POST | `/api/tenders/:id/send` | auth | Envío real + `activa` | 401/404/409/422/502 |
 | POST | `/api/tenders/:id/invoice` | auth | `finalizada → por_cobrar` con `invoicedAmount` (default: total de productos) | 400/401/404/409 |
 | POST | `/api/tenders/:id/payments` | auth | Registra pago; saldo 0 → `cobrada` automática | 400/401/404/409/422 |
@@ -380,18 +386,23 @@ curl -s -b cookies.txt -X DELETE $BASE/api/tenders/$TENDER_ID/products/$PRODUCT_
 echo "{\"productId\":\"$PRODUCT_ID\",\"quantity\":1}" > add.json
 curl -s -b cookies.txt -H "Content-Type: application/json" -d @add.json $BASE/api/tenders/$TENDER_ID/products
 
-# 5) Subir el PDF (signed URL + PUT directo a Storage)
+# 5) Subir el PDF (dos caminos equivalentes)
+#    5a) Proxy por la API (el que usa la UI): el PDF crudo viaja como body
+echo '%PDF-1.4 ...' > propuesta.pdf     # o tu PDF real
+curl -s -b cookies.txt -X POST -H "Content-Type: application/pdf" \
+  -H "x-file-name: propuesta.pdf" --data-binary @propuesta.pdf \
+  $BASE/api/tenders/$TENDER_ID/proposal/upload
+# 5b) Signed URL (para clientes que hablen directo con Storage)
 echo '{"fileName":"propuesta.pdf","size":1024,"contentType":"application/pdf"}' > up.json
 UP=$(curl -s -b cookies.txt -H "Content-Type: application/json" -d @up.json $BASE/api/tenders/$TENDER_ID/proposal/upload-url)
 PATH_FILE=$(echo $UP | node -p "JSON.parse(require('fs').readFileSync(0)).path")
 TOKEN=$(echo $UP | node -p "JSON.parse(require('fs').readFileSync(0)).token")
 SUPABASE_URL=https://xxxx.supabase.co   # tu proyecto
 BUCKET=proposals
-echo '%PDF-1.4 ...' > propuesta.pdf     # o tu PDF real
 curl -s -X PUT -H "Content-Type: application/pdf" --data-binary @propuesta.pdf \
   "$SUPABASE_URL/storage/v1/object/$BUCKET/$PATH_FILE?token=$TOKEN"
 
-# 6) Confirmar y enviar (correo real con adjunto → activa)
+# 6) Confirmar (solo si usaste 5b) y enviar (correo real con adjunto → activa)
 echo "{\"path\":\"$PATH_FILE\"}" > confirm.json
 curl -s -b cookies.txt -H "Content-Type: application/json" -d @confirm.json $BASE/api/tenders/$TENDER_ID/proposal/confirm
 curl -s -b cookies.txt -X POST -H "Content-Type: application/json" $BASE/api/tenders/$TENDER_ID/send
@@ -415,7 +426,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" $BASE/api/cron/tick
 | Decisión | Motivo | Alternativa descartada |
 |---|---|---|
 | Documento **inmutable tras el envío** (solo editable en `borrador`) | Trazabilidad: el PDF guardado es exactamente lo que recibió el cliente; un cambio posterior rompería la evidencia | Editar también en `activa` (el enunciado lo permite, pero debilita la prueba de qué se envió) |
-| **Signed URL** en vez de subir el archivo por la función de la API | El binario no pasa por Vercel (límite ~4.5 MB) y el cliente sube directo a Storage con token de un solo uso | `POST multipart` con límite 4 MB (variante del plan; válida pero centraliza tráfico inútil) |
+| **Subida del PDF por nuestra API** (`POST /:id/proposal/upload`, binario como body y `Content-Type: application/pdf`) | El spike de la fase 9 demostró que Storage exige `apikey` + `authorization` (service role) para subir: sin clave anónima en `.env`, la signed URL devuelve 403 RLS desde el navegador y exponer la service role es inaceptable. De paso, un form cruzado no puede enviar `Content-Type: application/pdf`, así que el tipo hace de protección CSRF (la sesión sigue exigiéndose) | Signed URL desde el navegador (rechazada por RLS) o exponer la clave anónima en el cliente |
 | **Copiar `unitPrice`** al agregar el producto | Si `basePrice` cambia después, las licitaciones existentes no se alteran (histórico estable) | Recalcular siempre desde `products.basePrice` (reescribe la historia) |
 | **Correo antes de transicionar** + `Idempotency-Key` | Nunca queda "activa sin notificar"; el reintento tras fallo parcial no duplica el correo | Transicionar primero y avisar después (estado mentiría si el correo falla) |
 | **`finalize`/`lose` como wrappers** de `changeState()` → `transition()` | Una sola puerta para el cambio de estado y el historial; los endpoints son alias semánticos | Lógica de estado propia en cada endpoint (reglas duplicadas) |
@@ -427,7 +438,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" $BASE/api/cron/tick
 ## 11. Pruebas
 
 ```bash
-npm test        # vitest run — 9 archivos, 83 tests
+npm test        # vitest run — 10 archivos, 96 tests
 ```
 
 Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.com` / `test-user@example.com`); `fileParallelism: false` para evitar carreras sobre las mismas filas.
@@ -439,14 +450,15 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | `transition.test.ts` | `FOR UPDATE`, 404, 409 con detalle `{from,to}`, registro en historial |
 | `budget.test.ts` | Límite exacto aceptado, +1 centavo → 422, upsert descuenta el subtotal anterior |
 | `tenders.test.ts` | HTTP: crear/listar con filtros, `finalize`/`lose`, `expiring`, detalle con totales |
-| `proposal.test.ts` | **Storage real**: validación PDF/10 MB, flujo upload→confirm, path ajeno → 400, revalidación de estado, borrado del archivo anterior |
+| `proposal.test.ts` | **Storage real**: validación PDF/10 MB, flujo upload→confirm, path ajeno → 400, revalidación de estado, borrado del archivo anterior, y el **proxy `POST /:id/proposal/upload`** (401 sin sesión, 400 por tipo/contenido no PDF, 201 con nombre saneado, 409 si no está en borrador) |
 | `send.test.ts` | **Resend mockeado**: missing proposal, deadline, sin productos, estado inválido, OK → `activa` + `EmailLog` + idempotency key, `EMAIL_FAILED` 502 sin transición, doble envío concurrente (1 gana, 1 → 409) |
 | `payments.test.ts` | Facturación (default = total, monto custom, 409 doble), pagos (422 con `details.balance`, auto-`cobrada`) y **concurrencia**: dos pagos simultáneos no exceden el saldo; una sola transición a `cobrada` |
 | `jobs.test.ts` | Vencimiento (reason, `userId: null`, idempotente), recordatorio (ventana, sin duplicar, fallo → reintento, **reclamo concurrente = 1 correo**) y tick HTTP (401 sin secret, resumen del tick) |
+| `money.test.ts` | Conversión a centavos enteros: punto/como de miles, formato `es-PE`, símbolos, vacíos, negativos y sumas sin error de punto flotante |
 
 **No se automatiza:** el correo real y el tick de cron-job.org en producción (se verifican a mano con las evidencias de §12).
 
-**Frontend (fase 8):** cada pantalla se verificó con un smoke E2E en Playwright contra `next start` (login → crear → buscar/filtrar → logout), revisando además capturas y que no hubiera errores JS ni respuestas 5xx. Los scripts son temporales y no se versionan; la suite automatizada de Vitest sigue siendo solo backend.
+**Frontend (fases 8-9):** cada pantalla se verificó con un smoke E2E en Playwright: login → crear → buscar/filtrar → logout (fase 8) y, en la fase 9, detalle (alta/baja de productos, aviso de presupuesto excedido, 404), documento + envío (rechazo de no-PDF, doble clic = un solo envío), ciclo completo (finalizar → facturar → pago excesivo bloqueado → cobrar) y panel de vencimientos (incluye las próximas, excluye lejanas y borradores), revisando además que no hubiera errores JS ni respuestas 5xx. Los scripts son temporales y no se versionan; la suite automatizada de Vitest sigue siendo solo backend.
 
 ## 12. Evidencias
 
@@ -460,12 +472,13 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | Documento accesible por URL pública (HTTP 200, `application/pdf`) | ✅ [`Propuesta_Evidencia_Fase_5.pdf`](https://tcrjekibvnzjnbxdebto.supabase.co/storage/v1/object/public/proposals/tenders/ec4dda0d-e4d6-4883-bfbb-39fc0c813a41/1791381921609-Propuesta_Evidencia_Fase_5.pdf) |
 | Prueba E2E en producción (checklist del enunciado) | ⏳ fase 10 |
 | Frontend fase 8 (login, layout, 5 listados + alta) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
+| Frontend fase 9 (detalle, documento + envío, ciclo, panel de vencer) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 
 ## 13. Limitaciones conocidas y pendientes
 
 **Pendientes por fase (ver tabla de §1):**
 
-- **Fase 9:** frontend del detalle de licitación, panel de próximas a vencer, `/api/docs` (Swagger).
+- **Fase 9 (último paso):** `/api/docs` con OpenAPI + Swagger UI. El detalle de licitación y el panel de próximas a vencer ya están entregados.
 - **Fase 10:** E2E en producción, limpieza y credenciales.
 
 **Limitaciones asumidas hoy:**
@@ -475,7 +488,8 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 - **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key`, pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
 - **Resend sin dominio verificado:** remitente `onboarding@resend.dev`, entrega solo al titular y a Spam. Pendiente verificar dominio (§4).
 - **Sin rate limit** ni bloqueo por intentos fallidos de login.
-- **`/api/docs`** aún no existe (la app usa `OpenAPIHono`, el endpoint queda para la fase 9).
+- **`/api/docs`** aún no existe: la app instancia `OpenAPIHono` pero las rutas son Hono planos, así que `app.doc()` quedaría vacío; se servirá un spec propio (último paso de la fase 9).
+- **Subida de PDF limitada a 4 MB en el cliente** (Vercel admite ~4.5 MB de cuerpo); el servicio, la API y los tests siguen permitiendo 10 MB.
 - **Tests contra BD de desarrollo** en lugar de Postgres local con Docker (no disponible en la máquina).
 - **`prisma migrate deploy`** puede colgarse tras aplicar el SQL en este entorno (workaround: verificar con `scripts/db-report.js`); causa no resuelta.
 
@@ -483,7 +497,8 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 
 ### Guías rápidas
 
-- **Subir un documento:** `POST /:id/proposal/upload-url` → `PUT` a Storage con `token` → `POST /:id/proposal/confirm`.
+- **Detalle:** abre `/tenders/:id` desde el listado o desde el panel de vencimientos.
+- **Subir un documento:** `POST /:id/proposal/upload` con el PDF como body (lo que usa la UI) o, alternativamente, `POST /:id/proposal/upload-url` → `PUT` a Storage → `POST /:id/proposal/confirm`.
 - **Enviar:** `POST /:id/send` (solo desde `borrador` con documento y deadline vigente).
 - **Historial:** `GET /:id/transitions` y `GET /:id` (incluye `transitions` y `emails`).
 - **Evidencia reproducible:** `node --env-file=.env --import tsx scripts/send-evidence.ts`.
