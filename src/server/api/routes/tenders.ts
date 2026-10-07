@@ -13,6 +13,12 @@ import {
 } from "../../services/tenders.service";
 import { addProduct, removeProduct } from "../../services/tender-products.service";
 import {
+  invoiceSchema,
+  paymentSchema,
+  invoiceTender,
+  registerPayment,
+} from "../../services/payment.service";
+import {
   uploadUrlSchema,
   confirmSchema,
   createUploadUrl,
@@ -73,6 +79,16 @@ export const tenderRoutes = new Hono()
   .post("/api/tenders/:id/send", async (c) => {
     const tender = await sendTender(c.req.param("id"), c.get("user").id);
     return c.json(tender);
+  })
+  .post("/api/tenders/:id/invoice", async (c) => {
+    const body = await readJsonBody(c, invoiceSchema);
+    const tender = await invoiceTender(c.req.param("id"), body, c.get("user").id);
+    return c.json(tender);
+  })
+  .post("/api/tenders/:id/payments", async (c) => {
+    const body = await readJsonBody(c, paymentSchema);
+    const result = await registerPayment(c.req.param("id"), body, c.get("user").id);
+    return c.json(result, 201);
   })
   .post("/api/tenders/:id/finalize", async (c) => {
     const tender = await changeState(c.req.param("id"), "finalizada", c.get("user").id, "manual");
