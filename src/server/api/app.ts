@@ -9,10 +9,11 @@ import { userRoutes } from "./routes/users";
 import { clientRoutes } from "./routes/clients";
 import { productRoutes } from "./routes/products";
 import { tenderRoutes } from "./routes/tenders";
+import { cronRoutes } from "./routes/cron";
 
 export const app = new OpenAPIHono().onError(onError);
 
-const PUBLIC_PATHS = new Set(["/api/health", "/api/spike", "/api/auth/login"]);
+const PUBLIC_PATHS = new Set(["/api/health", "/api/spike", "/api/auth/login", "/api/cron/tick"]);
 
 app.use("*", async (c, next) => {
   if (c.req.method !== "GET" && c.req.method !== "HEAD") {
@@ -35,5 +36,6 @@ app.route("/", userRoutes);
 app.route("/", clientRoutes);
 app.route("/", productRoutes);
 app.route("/", tenderRoutes);
+app.route("/", cronRoutes);
 
 export type AppType = typeof app;
