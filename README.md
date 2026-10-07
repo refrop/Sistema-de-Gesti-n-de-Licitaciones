@@ -22,8 +22,8 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | 3 | Máquina de estados, `transition()` con bloqueo de fila, historial + tests | ✅ |
 | 4 | CRUD de licitaciones, productos con regla de presupuesto + tests | ✅ |
 | 5 | Documento (signed URL) y envío real con adjunto + `EmailLog` + idempotencia | ✅ |
-| 6 | Facturación y pagos transaccionales (auto-`cobrada`) | ⏳ pendiente |
-| 7 | Jobs de vencimiento y recordatorio, cron en producción | ⏳ pendiente |
+| 6 | Facturación y pagos transaccionales (auto-`cobrada`) | ✅ |
+| 7 | Jobs de vencimiento y recordatorio, `/api/cron/tick` en producción | ✅ |
 | 8 | Frontend: login, layout, formularios de clientes/productos/usuarios | ⏳ pendiente |
 | 9 | Detalle de licitación, panel de próximas a vencer, `/api/docs` | ⏳ pendiente |
 | 10 | Evidencias, E2E en producción, limpieza final | ⏳ pendiente |
@@ -40,8 +40,8 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | Supabase (Postgres) | — | BD gestionada con pooler; migraciones vía `DIRECT_URL` |
 | Supabase Storage | — | Subida de PDFs con signed URLs y URL pública verificable como evidencia |
 | Resend | 6.32 | Correo real con adjunto, `Idempotency-Key` para reintentos sin duplicar |
-| Vercel | — | Deploy continuo desde GitHub, variables de entorno y health check público |
-| cron-job.org | — | ⏳ (fase 7) Jobs programados fuera del límite de Vercel Hobby |
+| Vercel | — | Deploy continuo desde GitHub, variables de entorno, health check y Vercel Cron de respaldo (`vercel.json`) |
+| cron-job.org | — | Tick cada 15 min en producción, fuera del límite de Vercel Hobby |
 | Vitest | 3.2 | Tests unitarios e de integración contra BD real |
 | Zod | 4.6 | Validación de entrada en routes y `.env` |
 
@@ -59,8 +59,8 @@ src/
     lib/                    # db, env, email, storage, pagination, html
   app/page.tsx              # Página actual (placeholder)
 prisma/                     # schema.prisma, migrations/, seed.ts
-tests/                      # Vitest (7 archivos, 60 tests)
-scripts/                    # db-report, send-evidence, check-transitions
+tests/                      # Vitest (9 archivos, 83 tests)
+scripts/                    # db-report, send-evidence, cron-evidence, check-transitions
 docs/                       # Evidencias (ver §12)
 .env.example
 ```
@@ -115,7 +115,7 @@ npm install                 # ejecuta prisma generate (postinstall)
 npx prisma migrate dev      # crea el schema
 npx prisma db seed          # admin + usuario demo
 npm run dev                 # http://localhost:3000
-npm test                    # 60 tests
+npm test                    # 83 tests
 ```
 
 Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
@@ -174,7 +174,7 @@ erDiagram
 | `Product` | Catálogo reutilizable | `sku` unique, `basePrice NUMERIC(12,2)` |
 | `Tender` | Licitación (entidad central) | `status`, `maxBudget`, `deadline` (UTC), `proposalPath/Url/Name/Size`, `sentAt`, `reminderSentAt`, `invoicedAmount/At` |
 | `TenderProduct` | Línea de producto en la licitación | `quantity`, **`unitPrice` (copia del `basePrice` al agregar)**, unique `(tenderId, productId)` |
-| `Payment` | Pagos (fase 6) | `amount > 0` (CHECK), `paidAt` |
+| `Payment` | Pagos de la licitación | `amount > 0` (CHECK), `paidAt`, `note` |
 | `TenderTransition` | Historial de estados | `fromStatus` (null en creación), `toStatus`, `userId` (null = sistema), `reason` |
 | `EmailLog` | Trazabilidad de correos | `type` (envio/recordatorio), `status` (enviado/fallido), `providerId` de Resend, `error` |
 
@@ -188,9 +188,9 @@ stateDiagram-v2
     borrador --> activa: envío del documento (reason: envio)
     activa --> finalizada: finalize (manual)
     activa --> perdida: lose (manual)
-    activa --> perdida: vencimiento de deadline ⏳ fase 7
-    finalizada --> por_cobrar: facturación ⏳ fase 6
-    por_cobrar --> cobrada: saldo 0 ⏳ fase 6
+    activa --> perdida: vencimiento de deadline (cron, reason: vencimiento_automatico)
+    finalizada --> por_cobrar: invoice (reason: facturada)
+    por_cobrar --> cobrada: saldo 0 al registrar pago (reason: saldo_cero)
     cobrada --> [*]
     perdida --> [*]
 ```
@@ -200,9 +200,9 @@ stateDiagram-v2
 | *(null)* | `borrador` | `POST /api/tenders` (creación, `reason: creacion`) |
 | `borrador` | `activa` | `POST /api/tenders/:id/send` (`reason: envio`) |
 | `activa` | `finalizada` | `POST /api/tenders/:id/finalize` (`reason: manual`) |
-| `activa` | `perdida` | `POST /api/tenders/:id/lose` (`reason: manual`) / cron ⏳ (`vencimiento_automatico`) |
-| `finalizada` | `por_cobrar` | ⏳ fase 6 (`facturada`) |
-| `por_cobrar` | `cobrada` | ⏳ fase 6 (`saldo_cero`) |
+| `activa` | `perdida` | `POST /api/tenders/:id/lose` (`reason: manual`) o cron (`reason: vencimiento_automatico`, `userId: null`) |
+| `finalizada` | `por_cobrar` | `POST /api/tenders/:id/invoice` (`reason: facturada`) |
+| `por_cobrar` | `cobrada` | `POST /api/tenders/:id/payments` cuando el saldo llega a 0 (`reason: saldo_cero`) |
 
 Cualquier otra combinación → `409 INVALID_TRANSITION`.
 
@@ -234,8 +234,17 @@ Todo lo que cambia de estado pasa por aquí: es la única puerta y el historial 
 | Transiciones solo según la tabla de la §6 | `transition()` | `409 INVALID_TRANSITION` |
 | PDF ≤ 10 MB y `application/pdf` (validado en la petición **y** con los metadatos reales de Storage al confirmar) | `proposal.service.ts` | `400 VALIDATION` |
 | El `path` confirmado pertenece a la licitación (`tenders/{id}/...`) | `confirmUpload` | `400 VALIDATION` |
+| Facturación solo desde `finalizada` | `invoiceTender` | `409 INVALID_STATE` |
+| Monto de factura y de pago > 0 (por defecto, factura = total de productos) | `invoiceTender` / `registerPayment` | `400 VALIDATION` |
+| Pagos solo en `por_cobrar` | `registerPayment` | `409 INVALID_STATE` |
+| Un pago nunca supera el saldo (`invoicedAmount − Σ pagos`), con `Decimal` | `registerPayment` (bajo `FOR UPDATE`) | `422 PAYMENT_EXCEEDS_BALANCE` |
+| Saldo 0 → transición automática a `cobrada` en la misma transacción | `registerPayment` | — |
+| Activa con `deadline` pasado → `perdida` automática | `expireTenders` (cron) | — |
+| Recordatorio único por licitación dentro de la ventana `REMINDER_HOURS` | `sendReminders` (reclamo atómico) | — |
 
-## 8. Flujo de envío (fase 5)
+## 8. Flujo de envío y jobs programados
+
+### Envío (fase 5)
 
 `POST /api/tenders/:id/send` ejecuta 4 pasos **en este orden**:
 
@@ -267,6 +276,19 @@ sequenceDiagram
 
 **Doble envío concurrente:** dos peticiones simultáneas pasan la validación, pero en el paso 4 solo una obtiene el `FOR UPDATE`; la otra relee `activa` y recibe `409 INVALID_TRANSITION`. Cubierto por test (`send.test.ts`).
 
+### Vencimiento y recordatorio (fase 7)
+
+`GET /api/cron/tick` con header `Authorization: Bearer <CRON_SECRET>` (comparación en tiempo constante; sin el secret → `401`). Ejecuta en este orden y devuelve `{ expired, reminded, errors, time }`:
+
+1. **Vencimiento (regla 2):** licitaciones `activa` con `deadline` pasado → `perdida` con `reason: vencimiento_automatico` y `userId: null` (sistema), en transacción con `transition()`. Idempotente: si otro proceso ya la cambió, la ignora.
+2. **Recordatorio (regla 5):** `activa` con `deadline` dentro de las próximas `REMINDER_HOURS` (48) y `reminderSentAt` null → correo con el resumen y "vence en X horas" (sin adjunto). El **reclamo atómico** (`UPDATE ... WHERE reminderSentAt IS NULL`) garantiza un solo envío aunque corran ticks simultáneos; si el correo falla se revierte el reclamo y se reintenta en el siguiente tick (con `EmailLog(fallido)`).
+
+**Orden importa:** se vence primero para no recordar una licitación ya vencida.
+
+**Disparadores en producción:**
+- `cron-job.org` → tick cada 15 min (configuración manual, ver §12).
+- `vercel.json` → respaldo diario a las 08:00 UTC; Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente si la variable existe en el proyecto.
+
 ## 9. API
 
 | Método | Ruta | Rol | Descripción | Errores |
@@ -290,8 +312,11 @@ sequenceDiagram
 | POST | `/api/tenders/:id/proposal/upload-url` | auth | Signed URL para subir PDF | 400/401/404/409 |
 | POST | `/api/tenders/:id/proposal/confirm` | auth | Confirma documento (valida Storage) | 400/401/404/409 |
 | POST | `/api/tenders/:id/send` | auth | Envío real + `activa` | 401/404/409/422/502 |
+| POST | `/api/tenders/:id/invoice` | auth | `finalizada → por_cobrar` con `invoicedAmount` (default: total de productos) | 400/401/404/409 |
+| POST | `/api/tenders/:id/payments` | auth | Registra pago; saldo 0 → `cobrada` automática | 400/401/404/409/422 |
 | POST | `/api/tenders/:id/finalize` | auth | `activa → finalizada` | 401/404/409 |
 | POST | `/api/tenders/:id/lose` | auth | `activa → perdida` | 401/404/409 |
+| GET | `/api/cron/tick` | secret | Jobs: vencimiento + recordatorio (ver §8) | 401 |
 | GET | `/api/health` | público | `{ status, time, db }` | — |
 | GET | `/api/spike` | público | Prueba temporal de integraciones (fase 1) | — |
 
@@ -342,6 +367,18 @@ echo "{\"path\":\"$PATH_FILE\"}" > confirm.json
 curl -s -b cookies.txt -H "Content-Type: application/json" -d @confirm.json $BASE/api/tenders/$TENDER_ID/proposal/confirm
 curl -s -b cookies.txt -X POST -H "Content-Type: application/json" $BASE/api/tenders/$TENDER_ID/send
 # {"status":"activa","sentAt":"..."}
+
+# 7) Cierre del ciclo: finalizar → facturar → cobrar
+curl -s -b cookies.txt -X POST -H "Content-Type: application/json" $BASE/api/tenders/$TENDER_ID/finalize
+curl -s -b cookies.txt -X POST -H "Content-Type: application/json" -d '{}' $BASE/api/tenders/$TENDER_ID/invoice
+# {"status":"por_cobrar","invoicedAmount":"300",...}
+echo '{"amount":300}' > pay.json
+curl -s -b cookies.txt -H "Content-Type: application/json" -d @pay.json $BASE/api/tenders/$TENDER_ID/payments
+# {"payment":{...},"balance":"0"}  y la licitación queda en cobrada
+
+# 8) Tick del cron (fuera de la API con sesión)
+curl -s -H "Authorization: Bearer $CRON_SECRET" $BASE/api/cron/tick
+# {"expired":0,"reminded":0,"errors":[],"time":"..."}
 ```
 
 ## 10. Decisiones de diseño
@@ -356,12 +393,12 @@ curl -s -b cookies.txt -X POST -H "Content-Type: application/json" $BASE/api/ten
 | **Sanitizar el nombre de archivo** y validar que el `path` empieza con `tenders/{id}/` | Evita path traversal y que un cliente confirme archivos ajenos | Confiar en el `path` que envía el cliente |
 | **BD antes que Storage** al reemplazar documento: se guarda la referencia nueva y recién ahí se borra la anterior | Una referencia rota es peor que un archivo huérfano en Storage | Borrar primero (ventana con `proposalUrl` colgando) |
 | Bucket `proposals` **público** | La URL del documento debe ser accesible y verificable como evidencia de entrega | Bucket privado + `createSignedUrl` temporal (más seguro, pero la URL no sirve como evidencia persistente) |
-| ⏳ **Cron externo (cron-job.org)** en vez de Vercel Cron | *(fase 7)* Sin límites del plan Hobby y ticks más frecuentes que el mínimo de Vercel | `vercel.json` + Vercel Cron (mínimo 1/día en Hobby, no sirve para recordatorios) |
+| **Cron externo (cron-job.org)** en vez de solo Vercel Cron | El plan Hobby de Vercel solo admite ticks diarios; el recordatorio necesita granularidad de 15 min. `vercel.json` queda como respaldo diario | Depender solo de Vercel Cron (mínimo 1/día, no sirve para recordatorios) |
 
 ## 11. Pruebas
 
 ```bash
-npm test        # vitest run — 7 archivos, 60 tests
+npm test        # vitest run — 9 archivos, 83 tests
 ```
 
 Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.com` / `test-user@example.com`); `fileParallelism: false` para evitar carreras sobre las mismas filas.
@@ -375,8 +412,10 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | `tenders.test.ts` | HTTP: crear/listar con filtros, `finalize`/`lose`, `expiring`, detalle con totales |
 | `proposal.test.ts` | **Storage real**: validación PDF/10 MB, flujo upload→confirm, path ajeno → 400, revalidación de estado, borrado del archivo anterior |
 | `send.test.ts` | **Resend mockeado**: missing proposal, deadline, sin productos, estado inválido, OK → `activa` + `EmailLog` + idempotency key, `EMAIL_FAILED` 502 sin transición, doble envío concurrente (1 gana, 1 → 409) |
+| `payments.test.ts` | Facturación (default = total, monto custom, 409 doble), pagos (422 con `details.balance`, auto-`cobrada`) y **concurrencia**: dos pagos simultáneos no exceden el saldo; una sola transición a `cobrada` |
+| `jobs.test.ts` | Vencimiento (reason, `userId: null`, idempotente), recordatorio (ventana, sin duplicar, fallo → reintento, **reclamo concurrente = 1 correo**) y tick HTTP (401 sin secret, resumen del tick) |
 
-**No se automatiza:** el correo real (se verifica a mano con la evidencia de §12) y el comportamiento de cron-job.org (fase 7).
+**No se automatiza:** el correo real y el tick de cron-job.org en producción (se verifican a mano con las evidencias de §12).
 
 ## 12. Evidencias
 
@@ -394,13 +433,12 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 
 **Pendientes por fase (ver tabla de §1):**
 
-- **Fase 6:** facturación (`finalizada → por_cobrar`) y pagos con transacción + bloqueo de fila, auto-`cobrada`, tests de concurrencia.
-- **Fase 7:** jobs de vencimiento y recordatorio, `POST /api/cron/tick`, configuración de cron-job.org y su evidencia.
 - **Fases 8-9:** frontend completo, panel de próximas a vencer, `/api/docs` (Swagger).
 - **Fase 10:** E2E en producción, limpieza y credenciales.
 
 **Limitaciones asumidas hoy:**
 
+- **cron-job.org requiere cuenta externa:** el tick está implementado y desplegado, pero la tarea recurrente cada 15 min se configura a mano en la cuenta (§8); de respaldo, Vercel Cron corre a diario a las 08:00 UTC.
 - **Endpoints de modificación/borrado** de usuarios, clientes y productos: solo existen listado y creación (`GET`/`POST`).
 - **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key`, pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
 - **Resend sin dominio verificado:** remitente `onboarding@resend.dev`, entrega solo al titular y a Spam. Pendiente verificar dominio (§4).
