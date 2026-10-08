@@ -10,10 +10,18 @@ import { clientRoutes } from "./routes/clients";
 import { productRoutes } from "./routes/products";
 import { tenderRoutes } from "./routes/tenders";
 import { cronRoutes } from "./routes/cron";
+import { docsRoutes } from "./routes/docs";
 
 export const app = new OpenAPIHono().onError(onError);
 
-const PUBLIC_PATHS = new Set(["/api/health", "/api/spike", "/api/auth/login", "/api/cron/tick"]);
+const PUBLIC_PATHS = new Set([
+  "/api/health",
+  "/api/spike",
+  "/api/auth/login",
+  "/api/cron/tick",
+  "/api/openapi.json",
+  "/api/docs",
+]);
 
 // La subida del PDF llega con Content-Type application/pdf (no JSON). Un sitio
 // cruzado no puede emitir ese tipo desde un form, asi que el content-type hace
@@ -42,5 +50,6 @@ app.route("/", clientRoutes);
 app.route("/", productRoutes);
 app.route("/", tenderRoutes);
 app.route("/", cronRoutes);
+app.route("/", docsRoutes);
 
 export type AppType = typeof app;

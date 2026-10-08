@@ -2,9 +2,9 @@
 
 ## 1. Encabezado y acceso rápido
 
-Gestión de licitaciones de principio a fin: creación de propuestas con productos y presupuesto, documento PDF en Supabase Storage, envío real por correo con adjunto, máquina de estados con historial y trazabilidad completa de correos. Backend y frontend desplegados en Vercel sobre Supabase: login, layout, listados/alta, **detalle de licitación** (productos, totales, documento, envío, ciclo completo, historial y correos) y **panel de próximas a vencer**. `/api/docs` queda como último paso de la fase 9.
+Gestión de licitaciones de principio a fin: creación de propuestas con productos y presupuesto, documento PDF en Supabase Storage, envío real por correo con adjunto, máquina de estados con historial y trazabilidad completa de correos. Backend y frontend desplegados en Vercel sobre Supabase: login, layout, listados/alta, **detalle de licitación** (productos, totales, documento, envío, ciclo completo, historial y correos), **panel de próximas a vencer** y **documentación de la API**.
 
-**Demo:** https://sistema-de-gesti-n-de-licitaciones.vercel.app · **Health:** [/api/health](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/health) · **Docs API:** `/api/docs` ⏳ (último paso de la fase 9)
+**Demo:** https://sistema-de-gesti-n-de-licitaciones.vercel.app · **Health:** [/api/health](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/health) · **Docs API:** [/api/docs](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/docs) (spec en [/api/openapi.json](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/openapi.json))
 
 **Credenciales demo (solo evaluación, cámbialas en cualquier entorno real):**
 
@@ -25,7 +25,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | 6 | Facturación y pagos transaccionales (auto-`cobrada`) | ✅ |
 | 7 | Jobs de vencimiento y recordatorio, `/api/cron/tick` en producción | ✅ |
 | 8 | Frontend: login con nebulosa, layout autenticado, listados + alta de clientes/productos/usuarios/licitaciones | ✅ |
-| 9 | Detalle de licitación (productos, totales, documento, envío, ciclo, historial/correos), panel de próximas a vencer, `/api/docs` | ✅ detalle y panel · ⏳ `/api/docs` |
+| 9 | Detalle de licitación (productos, totales, documento, envío, ciclo, historial/correos), panel de próximas a vencer, `/api/docs` + spec OpenAPI | ✅ |
 | 10 | Evidencias, E2E en producción, limpieza final | ⏳ pendiente |
 
 ---
@@ -35,7 +35,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | Pieza | Versión | Por qué |
 |---|---|---|
 | Next.js | 15.5 | Frontend (App Router, fases 8-9) y host de la API en un solo runtime; tipos compartidos cliente/servidor |
-| Hono + `@hono/zod-openapi` | 4.13 / 1.6 | API ultraligera con middleware reutilizable y base para Swagger (`/api/docs`, pendiente) |
+| Hono + `@hono/zod-openapi` + `@hono/swagger-ui` | 4.13 / 1.6 / 0.6 | API ultraligera con middleware reutilizable, spec OpenAPI propio y Swagger UI en `/api/docs` |
 | Prisma | 6.19 | ORM tipado, migraciones versionadas y `Decimal` para dinero |
 | Supabase (Postgres) | — | BD gestionada con pooler; migraciones vía `DIRECT_URL` |
 | Supabase Storage | — | Subida de PDFs con signed URLs y URL pública verificable como evidencia |
@@ -75,12 +75,12 @@ src/
     tender-serialize.ts     # Decimal/Date → string para pasar props del servidor al cliente
   middleware.ts             # gate de sesión y de rol admin (jose, edge)
   server/
-    api/                    # Hono: routes/, middleware/ (auth, errores), guard.ts
+    api/                    # Hono: routes/ (incluye docs.ts), middleware/ (auth, errores), openapi.ts, guard.ts
     services/               # Toda la lógica de negocio; únicos que tocan Prisma
     domain/                 # Puro, sin I/O: state-machine.ts, errors.ts
     lib/                    # db, env, email, storage, pagination, html
 prisma/                     # schema.prisma, migrations/, seed.ts
-tests/                      # Vitest (10 archivos, 96 tests)
+tests/                      # Vitest (11 archivos, 99 tests)
 scripts/                    # db-report, send-evidence, cron-evidence, check-transitions
 docs/                       # Evidencias (ver §12)
 .env.example
@@ -148,7 +148,7 @@ npm install                 # ejecuta prisma generate (postinstall)
 npx prisma migrate dev      # crea el schema
 npx prisma db seed          # admin + usuario demo
 npm run dev                 # http://localhost:3000
-npm test                    # 96 tests
+npm test                    # 99 tests
 ```
 
 Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
@@ -354,6 +354,8 @@ sequenceDiagram
 | GET | `/api/cron/tick` | secret | Jobs: vencimiento + recordatorio (ver §8) | 401 |
 | GET | `/api/health` | público | `{ status, time, db }` | — |
 | GET | `/api/spike` | público | Prueba temporal de integraciones (fase 1) | — |
+| GET | `/api/openapi.json` | público | Spec OpenAPI 3.1 (rutas, parámetros, códigos y esquemas) | — |
+| GET | `/api/docs` | público | Swagger UI sobre ese spec (sin sesión) | — |
 
 ### Ejemplo del flujo completo (curl)
 
@@ -438,7 +440,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" $BASE/api/cron/tick
 ## 11. Pruebas
 
 ```bash
-npm test        # vitest run — 10 archivos, 96 tests
+npm test        # vitest run — 11 archivos, 99 tests
 ```
 
 Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.com` / `test-user@example.com`); `fileParallelism: false` para evitar carreras sobre las mismas filas.
@@ -455,6 +457,7 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | `payments.test.ts` | Facturación (default = total, monto custom, 409 doble), pagos (422 con `details.balance`, auto-`cobrada`) y **concurrencia**: dos pagos simultáneos no exceden el saldo; una sola transición a `cobrada` |
 | `jobs.test.ts` | Vencimiento (reason, `userId: null`, idempotente), recordatorio (ventana, sin duplicar, fallo → reintento, **reclamo concurrente = 1 correo**) y tick HTTP (401 sin secret, resumen del tick) |
 | `money.test.ts` | Conversión a centavos enteros: punto/como de miles, formato `es-PE`, símbolos, vacíos, negativos y sumas sin error de punto flotante |
+| `docs.test.ts` | `/api/openapi.json` público (≥ 25 rutas y ≥ 26 operaciones), Swagger UI en `/api/docs` y que las mutaciones sigan exigiendo sesión |
 
 **No se automatiza:** el correo real y el tick de cron-job.org en producción (se verifican a mano con las evidencias de §12).
 
@@ -473,12 +476,12 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | Prueba E2E en producción (checklist del enunciado) | ⏳ fase 10 |
 | Frontend fase 8 (login, layout, 5 listados + alta) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Frontend fase 9 (detalle, documento + envío, ciclo, panel de vencer) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
+| Documentación interactiva `/api/docs` + spec público `/api/openapi.json` | ✅ testeado en `docs.test.ts` y verificado en producción |
 
 ## 13. Limitaciones conocidas y pendientes
 
 **Pendientes por fase (ver tabla de §1):**
 
-- **Fase 9 (último paso):** `/api/docs` con OpenAPI + Swagger UI. El detalle de licitación y el panel de próximas a vencer ya están entregados.
 - **Fase 10:** E2E en producción, limpieza y credenciales.
 
 **Limitaciones asumidas hoy:**
@@ -488,7 +491,7 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 - **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key`, pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
 - **Resend sin dominio verificado:** remitente `onboarding@resend.dev`, entrega solo al titular y a Spam. Pendiente verificar dominio (§4).
 - **Sin rate limit** ni bloqueo por intentos fallidos de login.
-- **`/api/docs`** aún no existe: la app instancia `OpenAPIHono` pero las rutas son Hono planos, así que `app.doc()` quedaría vacío; se servirá un spec propio (último paso de la fase 9).
+- **Spec OpenAPI escrito a mano** (`src/server/api/openapi.ts`) en vez de `app.doc()`: la app instancia `OpenAPIHono`, pero las rutas son `Hono` planos, así que `app.doc()` habría devuelto un documento vacío. Un spec propio sigue siendo válido para Swagger UI y se testea (`docs.test.ts`).
 - **Subida de PDF limitada a 4 MB en el cliente** (Vercel admite ~4.5 MB de cuerpo); el servicio, la API y los tests siguen permitiendo 10 MB.
 - **Tests contra BD de desarrollo** en lugar de Postgres local con Docker (no disponible en la máquina).
 - **`prisma migrate deploy`** puede colgarse tras aplicar el SQL en este entorno (workaround: verificar con `scripts/db-report.js`); causa no resuelta.
@@ -497,6 +500,7 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 
 ### Guías rápidas
 
+- **Documentación:** `/api/docs` (Swagger UI) y `/api/openapi.json` (spec, sin sesión).
 - **Detalle:** abre `/tenders/:id` desde el listado o desde el panel de vencimientos.
 - **Subir un documento:** `POST /:id/proposal/upload` con el PDF como body (lo que usa la UI) o, alternativamente, `POST /:id/proposal/upload-url` → `PUT` a Storage → `POST /:id/proposal/confirm`.
 - **Enviar:** `POST /:id/send` (solo desde `borrador` con documento y deadline vigente).
