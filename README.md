@@ -6,7 +6,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 
 **Demo:** https://sistema-de-gesti-n-de-licitaciones.vercel.app · **Health:** [/api/health](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/health) · **Docs API:** [/api/docs](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/docs) (spec en [/api/openapi.json](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/openapi.json))
 
-> **Para probar el envío de principio a fin, usa el cliente `Cliente Demo (evaluacion)`** (lo crea el seed cuando existe `SEED_CLIENT_EMAIL`, el correo del titular de la cuenta de Resend). El remitente `onboarding@resend.dev` sin dominio verificado solo puede entregar **al titular**: por eso `EMAIL_REDIRECT_TO` redirige todos los correos al titular y deja el destinatario original en el cuerpo del mensaje y en `EmailLog` (`to_email`), mientras el botón de envío sigue funcionando con cualquier cliente.
+> **Correo:** el proveedor se elige con `EMAIL_PROVIDER` (§4). Con **Brevo** (remitente individual verificado, sin dominio propio) el correo con adjunto llega a **cualquier cliente**. Con **Resend** sin dominio verificado solo se puede entregar **al titular** de la cuenta: por eso `EMAIL_REDIRECT_TO` redirige todos los correos al titular y deja el destinatario original en el cuerpo del mensaje y en `EmailLog` (`to_email`), mientras el botón de envío sigue funcionando con cualquier cliente. El cliente demo del seed (`SEED_CLIENT_EMAIL`, opcional) solo hace falta para reproducir ese camino con Resend.
 
 **Credenciales demo (solo evaluación, cámbialas en cualquier entorno real):**
 
@@ -82,7 +82,7 @@ src/
     domain/                 # Puro, sin I/O: state-machine.ts, errors.ts
     lib/                    # db, env, email, storage, pagination, html
 prisma/                     # schema.prisma, migrations/, seed.ts
-tests/                      # Vitest (12 archivos, 104 tests)
+tests/                      # Vitest (13 archivos, 108 tests)
 scripts/                    # db-report, send-evidence, cron-evidence, check-transitions
 docs/                       # Evidencias (ver §12)
 .env.example
@@ -109,7 +109,7 @@ flowchart LR
     C[Cliente: navegador / curl] --> V[Vercel: Next.js + Hono]
     V --> DB[(Supabase Postgres)]
     V --> S[(Supabase Storage)]
-    V --> R[Resend: correo con adjunto]
+    V --> R[Correo con adjunto: Resend o Brevo]
      J[GitHub Actions ✅] -->|GET /api/cron/tick| V
 ```
 
@@ -125,7 +125,7 @@ flowchart LR
 | `NOT_FOUND` | 404 | Recurso inexistente |
 | `INVALID_TRANSITION` / `NOT_EDITABLE` / `INVALID_STATE` / `CONFLICT` | 409 | Estado/versión en conflicto |
 | `BUDGET_EXCEEDED` / `MISSING_PROPOSAL` / `DEADLINE_PASSED` / `PAYMENT_EXCEEDS_BALANCE` | 422 | Reglas de negocio |
-| `EMAIL_FAILED` | 502 | Resend no pudo enviar |
+| `EMAIL_FAILED` | 502 | El proveedor de correo no pudo enviar |
 | `INTERNAL` | 500 | Error no previsto |
 
 - **Auditoría:** `createdById` / `updatedById` en todas las tablas operativas desde la fase 2.
@@ -139,7 +139,7 @@ flowchart LR
 
 - Node 20+ (probado con Node 24)
 - Cuenta [Supabase](https://supabase.com) (proyecto con Postgres + Storage)
-- Cuenta [Resend](https://resend.com) (API key)
+- Cuenta [Resend](https://resend.com) y/o [Brevo](https://www.brevo.com) (API key; el proveedor se elige con `EMAIL_PROVIDER`)
 - Nota: no hay `docker-compose.yml` en el repo; los tests y el desarrollo usan la BD de desarrollo de Supabase (§13)
 
 ### Pasos
@@ -150,7 +150,7 @@ npm install                 # ejecuta prisma generate (postinstall)
 npx prisma migrate dev      # crea el schema
 npx prisma db seed          # admin + usuario demo
 npm run dev                 # http://localhost:3000
-npm test                    # 104 tests
+npm test                    # 108 tests
 ```
 
 Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
@@ -165,12 +165,14 @@ Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
 | `JWT_EXPIRES_IN` | Duración de la sesión (default `8h`) |
 | `SEED_ADMIN_*` / `SEED_USER_*` | Credenciales del seed (admin y demo `user`) |
 | `SEED_CLIENT_EMAIL` | (opcional, seed) Crea el cliente demo con ese correo; vacío = no se crea |
-| `EMAIL_REDIRECT_TO` | (opcional) Titular de la cuenta: todos los correos van aquí; el original queda en el cuerpo y en `EmailLog.to_email` |
+| `EMAIL_REDIRECT_TO` | (opcional, solo Resend) Titular de la cuenta: todos los correos van aquí; el original queda en el cuerpo y en `EmailLog.to_email` |
 | `SUPABASE_URL` | URL del proyecto Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clave server-side **nunca** expuesta al cliente |
 | `SUPABASE_BUCKET` | Bucket de Storage (`proposals`) |
-| `RESEND_API_KEY` | API key de Resend |
-| `EMAIL_FROM` | Remitente (`onboarding@resend.dev` sin dominio verificado) |
+| `EMAIL_PROVIDER` | Proveedor de correo: `resend` (default) o `brevo` |
+| `RESEND_API_KEY` | API key de Resend (obligatoria con `EMAIL_PROVIDER=resend`) |
+| `BREVO_API_KEY` | API key de Brevo (obligatoria con `EMAIL_PROVIDER=brevo`) |
+| `EMAIL_FROM` | Remitente: Resend usa el remitente de la cuenta; Brevo exige `"Nombre <correo verificado>"` |
 | `CRON_SECRET` / `REMINDER_HOURS` | Secreto del endpoint cron y horas de recordatorio |
 | `APP_URL` | URL base (local o producción) |
 
@@ -180,10 +182,23 @@ Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
 2. **Storage → crear bucket `proposals` (público):** la URL del documento debe ser accesible como evidencia (ver §10).
 3. Credenciales de conexión: usar el **pooler transaccional `:6543`** en `DATABASE_URL` y `DIRECT_URL` (algunos firewalls bloquean 5432).
 
-### Resend
+### Correo: Resend (default) o Brevo
+
+**Resend** (`EMAIL_PROVIDER=resend`, el default):
 
 1. Crear API key → `RESEND_API_KEY`.
-2. Sin dominio verificado solo se envía desde `onboarding@resend.dev` **al correo del titular de la cuenta** y llega a **Spam**. `EMAIL_REDIRECT_TO` resuelve el primer efecto (todo va al titular, con el destinatario original en el cuerpo y en `EmailLog`); para producción conviene verificar dominio y cambiar `EMAIL_FROM` (§13).
+2. Sin dominio verificado (el dominio propio cuesta dinero) solo se envía desde `onboarding@resend.dev` **al correo del titular de la cuenta** y llega a **Spam**. `EMAIL_REDIRECT_TO` resuelve el primer efecto (todo va al titular, con el destinatario original en el cuerpo y en `EmailLog`); verificar un dominio permitiría usar cualquier remitente y quitar el redirect.
+
+**Brevo** (cualquier destinatario sin dominio propio, `EMAIL_PROVIDER=brevo`):
+
+1. [account.brevo.com](https://account.brevo.com) → **Settings → API Keys → Generate** → `BREVO_API_KEY`.
+2. **Settings → Senders & IP → Senders → Add a new sender** con el correo que usarás (basta una dirección individual, p. ej. la personal): Brevo envía un correo de confirmación a esa misma dirección; abrirlo y confirmarlo.
+3. `EMAIL_FROM="Nombre <correo verificado>"` y `EMAIL_PROVIDER=brevo`.
+4. `EMAIL_REDIRECT_TO` **no aplica** con Brevo: el correo siempre llega al destinatario original (`EmailLog.to_email` conserva el destino).
+5. `Idempotency-Key` es una función de Resend; con Brevo la protección contra duplicados del recordatorio es la reclamación atómica en BD (`reminderSentAt`).
+6. Límite de Brevo: adjunto **< 4 MB** y 20 MB por correo; la app limita la subida a 4 MB (§13).
+
+Cambiar de proveedor = cambiar `EMAIL_PROVIDER` (`resend` ↔ `brevo`); el default es `resend` para no romper entornos existentes. Si falta la API key del proveedor elegido la app **no arranca** (error claro en el arranque).
 
 ### Despliegue (Vercel)
 
@@ -292,7 +307,7 @@ sequenceDiagram
     participant API as Hono (Vercel)
     participant DB as Postgres
     participant ST as Storage
-    participant RS as Resend
+    participant RS as Correo (Resend/Brevo)
     C->>API: POST /api/tenders/:id/send
     API->>DB: 1. Validar (borrador, documento, deadline, ≥1 producto)
     API->>ST: 2. Descargar el PDF
@@ -300,17 +315,17 @@ sequenceDiagram
     RS-->>API: messageId
     API->>DB: 4. TX: FOR UPDATE → activa + sentAt + EmailLog(enviado)
     API-->>C: 200 { status: "activa" }
-    Note over API,RS: Si Resend falla → EmailLog(fallido) + 502 y sin transición
+    Note over API,RS: Si el proveedor falla → EmailLog(fallido) + 502 y sin transición
 ```
 
-1. **Validar** (estado, documento, deadline, productos) — antes de tocar Storage o Resend; cualquier fallo devuelve su error y no hay efectos secundarios.
+1. **Validar** (estado, documento, deadline, productos) — antes de tocar Storage o el correo; cualquier fallo devuelve su error y no hay efectos secundarios.
 2. **Descargar el PDF** de Storage — si Storage está caído, falla aquí y tampoco se envía correo.
-3. **Enviar el correo** con adjunto vía Resend, con `idempotencyKey: tender-{id}-envio`.
+3. **Enviar el correo** con adjunto vía el proveedor activo (Resend o Brevo), con `idempotencyKey: tender-{id}-envio`.
 4. **Transicionar en transacción:** `transition()` re-verifica el estado bajo `FOR UPDATE` y guarda `sentAt` + `EmailLog(enviado, providerId)` junto con el cambio de estado.
 
 **Si el correo falla (paso 3):** se crea `EmailLog(fallido)` con el mensaje, la API responde `502 EMAIL_FAILED` y la licitación **sigue en `borrador`** — es decir, nunca queda "activa sin notificar".
 
-**Idempotencia y fallo parcial:** si el correo salió pero la transacción del paso 4 falla (BD caída), el reintento usa la misma `Idempotency-Key` y Resend no crea un segundo correo. Riesgo residual: en ese caso el `EmailLog(enviado)` se pierde hasta el reintento (§13).
+**Idempotencia y fallo parcial:** si el correo salió pero la transacción del paso 4 falla (BD caída), el reintento usa la misma `Idempotency-Key` y Resend no crea un segundo correo (Brevo no ofrece idempotencia en la API; allí la protección es el `EmailLog` y la reclamación atómica del recordatorio). Riesgo residual: en ese caso el `EmailLog(enviado)` se pierde hasta el reintento (§13).
 
 **Doble envío concurrente:** dos peticiones simultáneas pasan la validación, pero en el paso 4 solo una obtiene el `FOR UPDATE`; la otra relee `activa` y recibe `409 INVALID_TRANSITION`. Cubierto por test (`send.test.ts`).
 
@@ -431,7 +446,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" $BASE/api/cron/tick
 ## 11. Pruebas
 
 ```bash
-npm test        # vitest run — 12 archivos, 104 tests
+npm test        # vitest run — 13 archivos, 108 tests
 ```
 
 Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler de Supabase) con usuarios de test (`test-admin@example.com` / `test-user@example.com`); `fileParallelism: false` para evitar carreras sobre las mismas filas. **Cuidado:** `jobs.test.ts` ejecuta `runTick()` real sobre esa BD, así que un `npm test` dispara vencimientos/recordatorios de verdad (y deja huérfanos si un hook de limpieza falla, p. ej. por corte de red) — nada de esto debe correr mientras se esperan sondas de cron (ver `docs/README.md`).
@@ -473,14 +488,14 @@ Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler
 
 ## 13. Limitaciones conocidas y pendientes
 
-**Pendientes por fase (ver tabla de §1):** ninguno — fases 1-10 completas. Tras la evaluación se rotan las credenciales demo (admin/user) y la `RESEND_API_KEY` (§4), como en cualquier entregable.
+**Pendientes por fase (ver tabla de §1):** ninguno — fases 1-10 completas. Tras la evaluación se rotan las credenciales demo (admin/user) y las API keys de correo (`RESEND_API_KEY` / `BREVO_API_KEY`, §4), como en cualquier entregable.
 
 **Limitaciones asumidas hoy:**
 
 - **El `schedule` de GitHub Actions no dispara en este repo:** `.github/workflows/cron.yml` está en `main`, el workflow está `active`, Actions está habilitado y el botón **Run workflow** funciona (run #1 → `success`), pero el evento `schedule` no se ha ejecutado en 12+ ranuras consecutivas (02:15-06:00 UTC, incluido un re-push del archivo). Mientras tanto **el tick automático lo da Vercel Cron** (`0 5 * * *`, verificado 08/10 05:43:57 UTC, precisión ±59 min en plan Hobby) y el workflow queda listo por si GitHub lo activa; el tick diario es suficiente para la ventana de 48 h del recordatorio. El repository secret `CRON_SECRET` sí está seteado (se creó por API de GitHub con la credencial guardada de `git credential fill`, sin versionar nada).
 - **Endpoints de modificación/borrado** de usuarios, clientes y productos: solo existen listado y creación (`GET`/`POST`).
-- **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key`, pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
-- **Resend sin dominio verificado:** remitente `onboarding@resend.dev`; con `EMAIL_REDIRECT_TO` el correo se entrega al titular (se indica el destinatario original en el cuerpo y `EmailLog.to_email` lo conserva), pero sigue llegando a Spam. Pendiente verificar dominio (§4).
+- **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key` (Resend; con Brevo no hay idempotencia en la API), pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
+- **Resend sin dominio verificado (solo con `EMAIL_PROVIDER=resend`):** remitente `onboarding@resend.dev`; con `EMAIL_REDIRECT_TO` el correo se entrega al titular (destinatario original en el cuerpo y `EmailLog.to_email`), pero llega a Spam. **Por eso existe el segundo proveedor:** con `EMAIL_PROVIDER=brevo` y un remitente individual verificado el correo llega a cualquier cliente sin dominio propio (§4); verificar un dominio en Resend permitiría volver y quitar el redirect.
 - **Sin rate limit** ni bloqueo por intentos fallidos de login.
 - **Spec OpenAPI escrito a mano** (`src/server/api/openapi.ts`) en vez de `app.doc()`: la app instancia `OpenAPIHono`, pero las rutas son `Hono` planos, así que `app.doc()` habría devuelto un documento vacío. Un spec propio sigue siendo válido para Swagger UI y se testea (`docs.test.ts`).
 - **Subida de PDF limitada a 4 MB en el cliente** (Vercel admite ~4.5 MB de cuerpo); el servicio, la API y los tests siguen permitiendo 10 MB.

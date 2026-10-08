@@ -44,7 +44,7 @@ const ERRORS: Record<number, Json> = {
   404: error("404 NOT_FOUND — recurso inexistente"),
   409: error("409 INVALID_TRANSITION / NOT_EDITABLE / INVALID_STATE / CONFLICT"),
   422: error("422 BUDGET_EXCEEDED / MISSING_PROPOSAL / DEADLINE_PASSED / PAYMENT_EXCEEDS_BALANCE"),
-  502: error("502 EMAIL_FAILED — Resend no pudo enviar"),
+  502: error("502 EMAIL_FAILED — el proveedor de correo no pudo enviar"),
 };
 
 function operation({

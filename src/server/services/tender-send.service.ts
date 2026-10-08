@@ -1,4 +1,5 @@
 import { db } from "../lib/db";
+import { env } from "../lib/env";
 import { DomainError } from "../domain/errors";
 import { sendEmail } from "../lib/email";
 import { downloadFile } from "../lib/storage";
@@ -51,7 +52,14 @@ export async function sendTender(tenderId: string, userId: string) {
         error: message.slice(0, 1000),
       },
     });
-    throw new DomainError("EMAIL_FAILED", `No se pudo enviar el correo: ${message}`);
+    // Solo con Resend (sin dominio verificado) el fallo suele ser de dominio:
+    // el hint viaja en el mensaje para que el toast del cliente lo muestre
+    // únicamente cuando el proveedor activo es Resend.
+    const hint =
+      env.EMAIL_PROVIDER === "resend"
+        ? " (el remitente sin dominio verificado solo puede entregar al titular de la cuenta)"
+        : "";
+    throw new DomainError("EMAIL_FAILED", `No se pudo enviar el correo: ${message}${hint}`);
   }
 
   // transition() re-verifica el estado bajo FOR UPDATE: si otra petición

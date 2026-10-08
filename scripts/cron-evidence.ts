@@ -11,9 +11,11 @@ async function main() {
   const admin = await db.user.findUnique({ where: { email: "admin@example.com" } });
   if (!admin) throw new Error("Falta el admin (ejecuta el seed)");
 
-  const existingClient = await db.client.findFirst({ where: { email: "refropg@gmail.com" } });
+  const targetEmail = process.env.SEED_CLIENT_EMAIL?.trim();
+  if (!targetEmail) throw new Error("Define SEED_CLIENT_EMAIL en .env (correo del cliente de evidencia)");
+  const existingClient = await db.client.findFirst({ where: { email: targetEmail } });
   const client = existingClient ?? (await db.client.create({
-    data: { name: "Cliente Evidencia", email: "refropg@gmail.com", createdById: admin.id, updatedById: admin.id },
+    data: { name: "Cliente Evidencia", email: targetEmail, createdById: admin.id, updatedById: admin.id },
   }));
 
   const product = await db.product.upsert({

@@ -6,7 +6,7 @@ import { FileUp, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ApiError, api, apiFetch, errorMessage } from "@/lib/api";
+import { api, apiFetch, errorMessage } from "@/lib/api";
 import { formatDateTime, formatSize } from "@/lib/format";
 import type { SerializedTender } from "@/lib/tender-serialize";
 
@@ -66,11 +66,6 @@ export function ActionsPanel({ tender }: { tender: SerializedTender }) {
       router.refresh();
     } catch (error) {
       toast.error(errorMessage(error));
-      if (error instanceof ApiError && error.code === "EMAIL_FAILED") {
-        toast.info(
-          "El remitente no tiene un dominio verificado: el correo solo puede entregarse al titular de la cuenta. Vuelve a intentarlo o revisa la configuracion de correo.",
-        );
-      }
     } finally {
       setSending(false);
     }
