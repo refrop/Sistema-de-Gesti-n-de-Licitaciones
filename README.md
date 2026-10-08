@@ -6,6 +6,8 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 
 **Demo:** https://sistema-de-gesti-n-de-licitaciones.vercel.app · **Health:** [/api/health](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/health) · **Docs API:** [/api/docs](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/docs) (spec en [/api/openapi.json](https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/openapi.json))
 
+> **Para probar el envío de principio a fin, usa el cliente `Cliente Demo (evaluacion)`** (lo crea el seed cuando existe `SEED_CLIENT_EMAIL`, el correo del titular de la cuenta de Resend). El remitente `onboarding@resend.dev` sin dominio verificado solo puede entregar **al titular**: por eso `EMAIL_REDIRECT_TO` redirige todos los correos al titular y deja el destinatario original en el cuerpo del mensaje y en `EmailLog` (`to_email`), mientras el botón de envío sigue funcionando con cualquier cliente.
+
 **Credenciales demo (solo evaluación, cámbialas en cualquier entorno real):**
 
 | Rol | Email | Password |
@@ -162,6 +164,8 @@ Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
 | `JWT_SECRET` | Secreto de 32+ caracteres para firmar el JWT (HS256) |
 | `JWT_EXPIRES_IN` | Duración de la sesión (default `8h`) |
 | `SEED_ADMIN_*` / `SEED_USER_*` | Credenciales del seed (admin y demo `user`) |
+| `SEED_CLIENT_EMAIL` | (opcional, seed) Crea el cliente demo con ese correo; vacío = no se crea |
+| `EMAIL_REDIRECT_TO` | (opcional) Titular de la cuenta: todos los correos van aquí; el original queda en el cuerpo y en `EmailLog.to_email` |
 | `SUPABASE_URL` | URL del proyecto Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clave server-side **nunca** expuesta al cliente |
 | `SUPABASE_BUCKET` | Bucket de Storage (`proposals`) |
@@ -179,7 +183,7 @@ Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
 ### Resend
 
 1. Crear API key → `RESEND_API_KEY`.
-2. Sin dominio verificado solo se envía desde `onboarding@resend.dev` **al correo del titular de la cuenta** y llega a **Spam**. Para producción: verificar dominio y cambiar `EMAIL_FROM` (§13).
+2. Sin dominio verificado solo se envía desde `onboarding@resend.dev` **al correo del titular de la cuenta** y llega a **Spam**. `EMAIL_REDIRECT_TO` resuelve el primer efecto (todo va al titular, con el destinatario original en el cuerpo y en `EmailLog`); para producción conviene verificar dominio y cambiar `EMAIL_FROM` (§13).
 
 ### Despliegue (Vercel)
 

@@ -12,6 +12,10 @@ const schema = z.object({
   SUPABASE_BUCKET: z.string().min(1, "SUPABASE_BUCKET es obligatoria"),
   RESEND_API_KEY: z.string().min(1, "RESEND_API_KEY es obligatoria"),
   EMAIL_FROM: z.string().min(1, "EMAIL_FROM es obligatoria"),
+  EMAIL_REDIRECT_TO: z
+    .union([z.email("EMAIL_REDIRECT_TO debe ser un correo válido"), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
   CRON_SECRET: z.string().min(16, "CRON_SECRET debe tener al menos 16 caracteres"),
   REMINDER_HOURS: z.coerce.number().int().positive("REMINDER_HOURS debe ser un entero positivo"),
   APP_URL: z.url("APP_URL debe ser una URL válida"),

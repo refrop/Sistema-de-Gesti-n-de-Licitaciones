@@ -6,7 +6,7 @@ import { FileUp, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { api, apiFetch, errorMessage } from "@/lib/api";
+import { ApiError, api, apiFetch, errorMessage } from "@/lib/api";
 import { formatDateTime, formatSize } from "@/lib/format";
 import type { SerializedTender } from "@/lib/tender-serialize";
 
@@ -33,7 +33,7 @@ export function ActionsPanel({ tender }: { tender: SerializedTender }) {
       return;
     }
     if (file.size > MAX_UPLOAD_BYTES) {
-      toast.error(`El archivo supera el limite de ${formatSize(MAX_UPLOAD_BYTES)}`);
+      toast.error("El archivo supera el limite de 4 MB (maximo)");
       return;
     }
     setUploading(true);
@@ -66,6 +66,11 @@ export function ActionsPanel({ tender }: { tender: SerializedTender }) {
       router.refresh();
     } catch (error) {
       toast.error(errorMessage(error));
+      if (error instanceof ApiError && error.code === "EMAIL_FAILED") {
+        toast.info(
+          "El remitente no tiene un dominio verificado: el correo solo puede entregarse al titular de la cuenta. Vuelve a intentarlo o revisa la configuracion de correo.",
+        );
+      }
     } finally {
       setSending(false);
     }
@@ -117,7 +122,7 @@ export function ActionsPanel({ tender }: { tender: SerializedTender }) {
                 {uploading ? "Subiendo…" : proposal ? "Reemplazar documento" : "Subir documento"}
               </Button>
               <p className="text-xs text-muted-foreground">
-                PDF de hasta {formatSize(MAX_UPLOAD_BYTES)}.
+                PDF de hasta 4 MB (maximo).
               </p>
             </>
           )}

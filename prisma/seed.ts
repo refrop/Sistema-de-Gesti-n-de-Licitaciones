@@ -31,6 +31,24 @@ async function main() {
   });
 
   console.log(`Usuario demo listo: ${demo.email} (id=${demo.id})`);
+
+  // Cliente demo (opcional): con EMAIL_FROM sin dominio verificado, el envío
+  // solo llega si el destinatario es el titular. SEED_CLIENT_EMAIL apunta a ese
+  // correo; si no está definida, no se crea ningún cliente.
+  const clientEmail = process.env.SEED_CLIENT_EMAIL?.trim();
+  if (!clientEmail) {
+    console.log("SEED_CLIENT_EMAIL no definida: se omite el cliente demo");
+  } else {
+    const data = {
+      name: "Cliente Demo (evaluacion)",
+      contactName: "Correo del titular de la cuenta",
+    };
+    const existing = await prisma.client.findFirst({ where: { email: clientEmail } });
+    const client = existing
+      ? await prisma.client.update({ where: { id: existing.id }, data })
+      : await prisma.client.create({ data: { ...data, email: clientEmail } });
+    console.log(`Cliente demo listo: ${client.email} (id=${client.id})`);
+  }
 }
 
 main()
