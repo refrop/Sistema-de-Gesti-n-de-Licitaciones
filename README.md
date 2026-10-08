@@ -110,7 +110,7 @@ flowchart LR
     V --> DB[(Supabase Postgres)]
     V --> S[(Supabase Storage)]
     V --> R[Resend: correo con adjunto]
-    J[cron-job.org ⏳] -->|POST /api/cron/tick| V
+     J[cron-job.org ⏳] -->|GET /api/cron/tick| V
 ```
 
 ### Convenciones
@@ -131,7 +131,7 @@ flowchart LR
 - **Auditoría:** `createdById` / `updatedById` en todas las tablas operativas desde la fase 2.
 - **Formato de respuestas:** objetos planos JSON (creación → `201`); listados → `{ data: [...], total, page, pageSize, totalPages }`; `DELETE` → `{ ok: true }`.
 - **CSRF básico:** toda mutación exige `Content-Type: application/json` (si no → `400`).
-- **Auth:** cookie `session` (httpOnly, sameSite=lax, 8 h) o `Authorization: Bearer <jwt>` para probar en Swagger. Públicas: `/api/health`, `/api/spike`, `/api/auth/login`.
+- **Auth:** cookie `session` (httpOnly, sameSite=lax, 8 h) o `Authorization: Bearer <jwt>` para probar en Swagger. Públicas: `/api/health`, `/api/auth/login`, `/api/openapi.json` y `/api/docs`.
 
 ## 4. Instalación y ejecución local
 
@@ -357,7 +357,6 @@ sequenceDiagram
 | POST | `/api/tenders/:id/lose` | auth | `activa → perdida` | 401/404/409 |
 | GET | `/api/cron/tick` | secret | Jobs: vencimiento + recordatorio (ver §8) | 401 |
 | GET | `/api/health` | público | `{ status, time, db }` | — |
-| GET | `/api/spike` | público | Prueba temporal de integraciones (fase 1) | — |
 | GET | `/api/openapi.json` | público | Spec OpenAPI 3.1 (rutas, parámetros, códigos y esquemas) | — |
 | GET | `/api/docs` | público | Swagger UI sobre ese spec (sin sesión) | — |
 
@@ -392,25 +391,13 @@ curl -s -b cookies.txt -X DELETE $BASE/api/tenders/$TENDER_ID/products/$PRODUCT_
 echo "{\"productId\":\"$PRODUCT_ID\",\"quantity\":1}" > add.json
 curl -s -b cookies.txt -H "Content-Type: application/json" -d @add.json $BASE/api/tenders/$TENDER_ID/products
 
-# 5) Subir el PDF (dos caminos equivalentes)
-#    5a) Proxy por la API (el que usa la UI): el PDF crudo viaja como body
+# 5) Subir el PDF (proxy por la API: el camino que usa la UI)
 echo '%PDF-1.4 ...' > propuesta.pdf     # o tu PDF real
 curl -s -b cookies.txt -X POST -H "Content-Type: application/pdf" \
   -H "x-file-name: propuesta.pdf" --data-binary @propuesta.pdf \
   $BASE/api/tenders/$TENDER_ID/proposal/upload
-# 5b) Signed URL (para clientes que hablen directo con Storage)
-echo '{"fileName":"propuesta.pdf","size":1024,"contentType":"application/pdf"}' > up.json
-UP=$(curl -s -b cookies.txt -H "Content-Type: application/json" -d @up.json $BASE/api/tenders/$TENDER_ID/proposal/upload-url)
-PATH_FILE=$(echo $UP | node -p "JSON.parse(require('fs').readFileSync(0)).path")
-TOKEN=$(echo $UP | node -p "JSON.parse(require('fs').readFileSync(0)).token")
-SUPABASE_URL=https://xxxx.supabase.co   # tu proyecto
-BUCKET=proposals
-curl -s -X PUT -H "Content-Type: application/pdf" --data-binary @propuesta.pdf \
-  "$SUPABASE_URL/storage/v1/object/$BUCKET/$PATH_FILE?token=$TOKEN"
 
-# 6) Confirmar (solo si usaste 5b) y enviar (correo real con adjunto → activa)
-echo "{\"path\":\"$PATH_FILE\"}" > confirm.json
-curl -s -b cookies.txt -H "Content-Type: application/json" -d @confirm.json $BASE/api/tenders/$TENDER_ID/proposal/confirm
+# 6) Enviar (correo real con adjunto → activa)
 curl -s -b cookies.txt -X POST -H "Content-Type: application/json" $BASE/api/tenders/$TENDER_ID/send
 # {"status":"activa","sentAt":"..."}
 
@@ -506,7 +493,7 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 
 - **Documentación:** `/api/docs` (Swagger UI) y `/api/openapi.json` (spec, sin sesión).
 - **Detalle:** abre `/tenders/:id` desde el listado o desde el panel de vencimientos.
-- **Subir un documento:** `POST /:id/proposal/upload` con el PDF como body (lo que usa la UI) o, alternativamente, `POST /:id/proposal/upload-url` → `PUT` a Storage → `POST /:id/proposal/confirm`.
+- **Subir un documento:** `POST /:id/proposal/upload` con el PDF como body (lo que usa la UI; máximo 4 MB en el formulario).
 - **Enviar:** `POST /:id/send` (solo desde `borrador` con documento y deadline vigente).
 - **Historial:** `GET /:id/transitions` y `GET /:id` (incluye `transitions` y `emails`).
 - **Evidencia reproducible:** `node --env-file=.env --import tsx scripts/send-evidence.ts`.

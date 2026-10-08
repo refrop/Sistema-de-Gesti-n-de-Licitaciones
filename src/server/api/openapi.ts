@@ -383,14 +383,6 @@ export const openApiDocument = {
         responses: { "200": response("{ status, time, db }") },
       }),
     },
-    "/api/spike": {
-      get: operation({
-        tag: "system",
-        summary: "Prueba temporal de integraciones (fase 1)",
-        isPublic: true,
-        codes: [],
-      }),
-    },
     "/api/openapi.json": {
       get: operation({
         tag: "system",

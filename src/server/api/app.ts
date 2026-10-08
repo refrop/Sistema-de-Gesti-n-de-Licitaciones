@@ -3,7 +3,6 @@ import { onError } from "./middleware/errors";
 import { requireAuth } from "./middleware/auth";
 import { DomainError } from "../domain/errors";
 import { systemRoutes } from "./routes/system";
-import { spikeRoutes } from "./routes/spike";
 import { authRoutes } from "./routes/auth";
 import { userRoutes } from "./routes/users";
 import { clientRoutes } from "./routes/clients";
@@ -16,7 +15,6 @@ export const app = new OpenAPIHono().onError(onError);
 
 const PUBLIC_PATHS = new Set([
   "/api/health",
-  "/api/spike",
   "/api/auth/login",
   "/api/cron/tick",
   "/api/openapi.json",
@@ -43,7 +41,6 @@ app.use("*", async (c, next) => {
 });
 
 app.route("/", systemRoutes);
-app.route("/", spikeRoutes);
 app.route("/", authRoutes);
 app.route("/", userRoutes);
 app.route("/", clientRoutes);
