@@ -28,7 +28,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | 7 | Jobs de vencimiento y recordatorio, `/api/cron/tick` en producción | ✅ |
 | 8 | Frontend: login con nebulosa, layout autenticado, listados + alta de clientes/productos/usuarios/licitaciones | ✅ |
 | 9 | Detalle de licitación (productos, totales, documento, envío, ciclo, historial/correos), panel de próximas a vencer, `/api/docs` + spec OpenAPI | ✅ |
-| 10 | Evidencias, E2E en producción, limpieza final | ⏳ pendiente |
+| 10 | Evidencias, E2E en producción, limpieza final | ✅ |
 
 ---
 
@@ -42,8 +42,8 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | Supabase (Postgres) | — | BD gestionada con pooler; migraciones vía `DIRECT_URL` |
 | Supabase Storage | — | Subida de PDFs con signed URLs y URL pública verificable como evidencia |
 | Resend | 6.32 | Correo real con adjunto, `Idempotency-Key` para reintentos sin duplicar |
-| Vercel | — | Deploy continuo desde GitHub, variables de entorno, health check y Vercel Cron de respaldo (`vercel.json`) |
-| GitHub Actions | — | Tick cada 15 min (`*/15 * * * *` + `workflow_dispatch`) contra producción, fuera del límite de Vercel Hobby; historial en la pestaña **Actions** del repo |
+| Vercel | — | Deploy continuo desde GitHub, variables de entorno, health check y Vercel Cron diario (`vercel.json`, 05:00 UTC, disparo automático verificado) |
+| GitHub Actions | — | Workflow de tick (`*/15 * * * *` + `workflow_dispatch`) contra producción, fuera del límite de Vercel Hobby; el botón **Run workflow** funciona y el evento `schedule` aún no dispara en el repo (ver §13) |
 | Vitest | 3.2 | Tests unitarios e de integración contra BD real |
 | Zod | 4.6 | Validación de entrada en routes y `.env` |
 
@@ -82,7 +82,7 @@ src/
     domain/                 # Puro, sin I/O: state-machine.ts, errors.ts
     lib/                    # db, env, email, storage, pagination, html
 prisma/                     # schema.prisma, migrations/, seed.ts
-tests/                      # Vitest (11 archivos, 99 tests)
+tests/                      # Vitest (12 archivos, 104 tests)
 scripts/                    # db-report, send-evidence, cron-evidence, check-transitions
 docs/                       # Evidencias (ver §12)
 .env.example
@@ -150,7 +150,7 @@ npm install                 # ejecuta prisma generate (postinstall)
 npx prisma migrate dev      # crea el schema
 npx prisma db seed          # admin + usuario demo
 npm run dev                 # http://localhost:3000
-npm test                    # 99 tests
+npm test                    # 104 tests
 ```
 
 Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
@@ -324,8 +324,8 @@ sequenceDiagram
 **Orden importa:** se vence primero para no recordar una licitación ya vencida.
 
 **Disparadores en producción:**
-- `.github/workflows/cron.yml` → tick cada 15 min con `curl -fsS -H "Authorization: Bearer $CRON_SECRET"` (el secreto vive como *repository secret* de GitHub; botón **Run workflow** para dispararlo a mano, ver §12).
-- `vercel.json` → respaldo diario a las 05:00 UTC; Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente si la variable existe en el proyecto.
+- `vercel.json` → tick diario a las 05:00 UTC (plan Hobby: 1/día con precisión ±59 min); Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente si la variable existe en el proyecto. **Es el disparador automático verificado:** el 08/10/2026 a las 05:43:57 UTC resolvió las dos sondas de fase 10 sin intervención manual (ver §12).
+- `.github/workflows/cron.yml` → `curl -fsS -H "Authorization: Bearer $CRON_SECRET"` con `*/15 * * * *` + `workflow_dispatch` (el secreto vive como *repository secret* de GitHub; botón **Run workflow** para dispararlo a mano, ver §12). El job manual corre (run #1, `success`); el evento `schedule` aún no dispara en este repo (limitación §13).
 
 ## 9. API
 
@@ -426,15 +426,15 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" $BASE/api/cron/tick
 | **Sanitizar el nombre de archivo** y validar que el `path` empieza con `tenders/{id}/` | Evita path traversal y que un cliente confirme archivos ajenos | Confiar en el `path` que envía el cliente |
 | **BD antes que Storage** al reemplazar documento: se guarda la referencia nueva y recién ahí se borra la anterior | Una referencia rota es peor que un archivo huérfano en Storage | Borrar primero (ventana con `proposalUrl` colgando) |
 | Bucket `proposals` **público** | La URL del documento debe ser accesible y verificable como evidencia de entrega | Bucket privado + `createSignedUrl` temporal (más seguro, pero la URL no sirve como evidencia persistente) |
-| **Cron externo (GitHub Actions)** en vez de solo Vercel Cron | El plan Hobby de Vercel solo admite ticks diarios; el recordatorio necesita granularidad de 15 min. El workflow corre en el repo (público), sin cuenta en servicios de terceros, y su historial sirve de evidencia. `vercel.json` queda como respaldo diario | Depender solo de Vercel Cron (mínimo 1/día, no sirve para recordatorios) |
+| **Cron externo (GitHub Actions)** en vez de solo Vercel Cron | El plan Hobby de Vercel solo admite ticks diarios y el recordatorio (ventana de 48 h) prefiere granularidad de 15 min. El workflow corre en el repo (público), sin cuenta de terceros, y su historial sirve de evidencia. Estado real: el **Run workflow** manual corre y el `schedule` aún no dispara en el repo (§13), así que **el tick automático verificado lo da Vercel Cron diario** (05:43:57 UTC) — suficiente para la ventana de 48 h | Depender solo de Vercel Cron sin workflow (sin disparo manual ni historial en Actions) |
 
 ## 11. Pruebas
 
 ```bash
-npm test        # vitest run — 11 archivos, 99 tests
+npm test        # vitest run — 12 archivos, 104 tests
 ```
 
-Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.com` / `test-user@example.com`); `fileParallelism: false` para evitar carreras sobre las mismas filas.
+Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler de Supabase) con usuarios de test (`test-admin@example.com` / `test-user@example.com`); `fileParallelism: false` para evitar carreras sobre las mismas filas. **Cuidado:** `jobs.test.ts` ejecuta `runTick()` real sobre esa BD, así que un `npm test` dispara vencimientos/recordatorios de verdad (y deja huérfanos si un hook de limpieza falla, p. ej. por corte de red) — nada de esto debe correr mientras se esperan sondas de cron (ver `docs/README.md`).
 
 | Archivo | Qué cubre |
 |---|---|
@@ -448,9 +448,9 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | `payments.test.ts` | Facturación (default = total, monto custom, 409 doble), pagos (422 con `details.balance`, auto-`cobrada`) y **concurrencia**: dos pagos simultáneos no exceden el saldo; una sola transición a `cobrada` |
 | `jobs.test.ts` | Vencimiento (reason, `userId: null`, idempotente), recordatorio (ventana, sin duplicar, fallo → reintento, **reclamo concurrente = 1 correo**) y tick HTTP (401 sin secret, resumen del tick) |
 | `money.test.ts` | Conversión a centavos enteros: punto/como de miles, formato `es-PE`, símbolos, vacíos, negativos y sumas sin error de punto flotante |
-| `docs.test.ts` | `/api/openapi.json` público (≥ 25 rutas y ≥ 26 operaciones), Swagger UI en `/api/docs` y que las mutaciones sigan exigiendo sesión |
+| `docs.test.ts` | `/api/openapi.json` público con la lista exacta de rutas (24) y operaciones (28), `security: []` solo en públicas y `401` en las protegidas, Swagger UI en `/api/docs` y que las mutaciones sigan exigiendo sesión |
 
-**No se automatiza:** el correo real (se verifica a mano con las evidencias de §12). El tick de cron **sí** está automatizado en producción: GitHub Actions cada 15 min + Vercel Cron diario de respaldo.
+**No se automatiza:** el correo real (se verifica a mano con las evidencias de §12). El tick de cron **sí** quedó probado en producción de punta a punta: Vercel Cron lo disparó solo (05:43:57 UTC, sondas de §12) y el workflow de GitHub Actions corre bajo demanda; el evento `schedule` de GitHub todavía no dispara (limitación §13).
 
 **Frontend (fases 8-9):** cada pantalla se verificó con un smoke E2E en Playwright: login → crear → buscar/filtrar → logout (fase 8) y, en la fase 9, detalle (alta/baja de productos, aviso de presupuesto excedido, 404), documento + envío (rechazo de no-PDF, doble clic = un solo envío), ciclo completo (finalizar → facturar → pago excesivo bloqueado → cobrar) y panel de vencimientos (incluye las próximas, excluye lejanas y borradores), revisando además que no hubiera errores JS ni respuestas 5xx. Los scripts son temporales y no se versionan; la suite automatizada de Vitest sigue siendo solo backend.
 
@@ -464,27 +464,27 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | Correo de recordatorio del cron (inbox/Spam, fase 7) | ✅ `docs/evidencia-cron-correo.png` |
 | `EmailLog` del envío real (providerId `01a116ae-eb87-786f-bdb9-e442a34f0cba`, estado `enviado`) | ✅ verificado en producción |
 | Documento accesible por URL pública (HTTP 200, `application/pdf`) | ✅ [`Propuesta_Evidencia_Fase_5.pdf`](https://tcrjekibvnzjnbxdebto.supabase.co/storage/v1/object/public/proposals/tenders/ec4dda0d-e4d6-4883-bfbb-39fc0c813a41/1791381921609-Propuesta_Evidencia_Fase_5.pdf) |
-| Prueba E2E en producción (checklist del enunciado) | ⏳ fase 10 |
+| Prueba E2E en producción (checklist del enunciado) | ✅ `docs/evidencia-e2e.png` (login → panel de vencer → listado con las 5 licitaciones → `/api/docs`; 0 errores JS/5xx) |
+| Tick automático sin intervención (recordatorio + vencimiento resueltos en el mismo tick) | ✅ 08/10/2026 **05:43:57 UTC** por Vercel Cron → `docs/evidencia-cron-recordatorio.png` y `docs/evidencia-cron-vencimiento.png` (`userId: null`, `vencimiento_automatico`) |
+| Workflow de GitHub Actions (tick bajo demanda) | ✅ `docs/evidencia-cron-actions.png` (run #1 manual → `success`; el `schedule` aún no dispara, ver §13) |
 | Frontend fase 8 (login, layout, 5 listados + alta) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Frontend fase 9 (detalle, documento + envío, ciclo, panel de vencer) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Documentación interactiva `/api/docs` + spec público `/api/openapi.json` | ✅ testeado en `docs.test.ts` y verificado en producción |
 
 ## 13. Limitaciones conocidas y pendientes
 
-**Pendientes por fase (ver tabla de §1):**
-
-- **Fase 10:** E2E en producción, limpieza y credenciales.
+**Pendientes por fase (ver tabla de §1):** ninguno — fases 1-10 completas. Tras la evaluación se rotan las credenciales demo (admin/user) y la `RESEND_API_KEY` (§4), como en cualquier entregable.
 
 **Limitaciones asumidas hoy:**
 
-- **El tick de cron depende del repository secret `CRON_SECRET`:** el workflow `.github/workflows/cron.yml` está versionado, pero sin ese secreto en GitHub la petición falla con 401 (Actions marcaría el job en rojo). De respaldo, Vercel Cron corre a diario a las 05:00 UTC.
+- **El `schedule` de GitHub Actions no dispara en este repo:** `.github/workflows/cron.yml` está en `main`, el workflow está `active`, Actions está habilitado y el botón **Run workflow** funciona (run #1 → `success`), pero el evento `schedule` no se ha ejecutado en 12+ ranuras consecutivas (02:15-06:00 UTC, incluido un re-push del archivo). Mientras tanto **el tick automático lo da Vercel Cron** (`0 5 * * *`, verificado 08/10 05:43:57 UTC, precisión ±59 min en plan Hobby) y el workflow queda listo por si GitHub lo activa; el tick diario es suficiente para la ventana de 48 h del recordatorio. El repository secret `CRON_SECRET` sí está seteado (se creó por API de GitHub con la credencial guardada de `git credential fill`, sin versionar nada).
 - **Endpoints de modificación/borrado** de usuarios, clientes y productos: solo existen listado y creación (`GET`/`POST`).
 - **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key`, pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
-- **Resend sin dominio verificado:** remitente `onboarding@resend.dev`, entrega solo al titular y a Spam. Pendiente verificar dominio (§4).
+- **Resend sin dominio verificado:** remitente `onboarding@resend.dev`; con `EMAIL_REDIRECT_TO` el correo se entrega al titular (se indica el destinatario original en el cuerpo y `EmailLog.to_email` lo conserva), pero sigue llegando a Spam. Pendiente verificar dominio (§4).
 - **Sin rate limit** ni bloqueo por intentos fallidos de login.
 - **Spec OpenAPI escrito a mano** (`src/server/api/openapi.ts`) en vez de `app.doc()`: la app instancia `OpenAPIHono`, pero las rutas son `Hono` planos, así que `app.doc()` habría devuelto un documento vacío. Un spec propio sigue siendo válido para Swagger UI y se testea (`docs.test.ts`).
 - **Subida de PDF limitada a 4 MB en el cliente** (Vercel admite ~4.5 MB de cuerpo); el servicio, la API y los tests siguen permitiendo 10 MB.
-- **Tests contra BD de desarrollo** en lugar de Postgres local con Docker (no disponible en la máquina).
+- **Tests contra la BD de producción** en lugar de Postgres local con Docker (no disponible en la máquina): ver el aviso de §11 sobre `runTick()`.
 - **`prisma migrate deploy`** puede colgarse tras aplicar el SQL en este entorno (workaround: verificar con `scripts/db-report.js`); causa no resuelta.
 
 ---
