@@ -6,10 +6,10 @@ Archivos de evidencia del proyecto. Guardar cada uno en cuanto se genere (no esp
 |---|---|---|
 | `evidencia-correo.png` | Captura del correo de envío (fase 5) con el PDF adjunto (inbox o Spam) | ✅ |
 | `evidencia-cron-correo.png` | Captura de los correos de recordatorio del cron (fase 7, inbox o Spam) | ✅ |
-| `evidencia-cron-recordatorio.png` | Sonda fase 10: recordatorio disparado **solo**, sin llamar a `/api/cron/tick` | ⏳ fase 10 |
-| `evidencia-cron-vencimiento.png` | Sonda fase 10: licitación que pasa sola a `perdida` (`userId` nulo, `vencimiento_automatico`) | ⏳ fase 10 |
-| `evidencia-cron-actions.png` | Historial de ejecuciones del workflow de GitHub Actions (tick cada 15 min) | ⏳ fase 10 |
-| `evidencia-e2e.png` | Prueba E2E completa en producción | ⏳ fase 10 |
+| `evidencia-cron-recordatorio.png` | Sonda fase 10: recordatorio disparado **solo** por el cron (05:43:57 UTC, sin llamar a `/api/cron/tick`) | ✅ |
+| `evidencia-cron-vencimiento.png` | Sonda fase 10: licitación que pasa sola a `perdida` (`userId` nulo, `vencimiento_automatico`, 05:43:57 UTC) | ✅ |
+| `evidencia-cron-actions.png` | Workflow "Tick de licitaciones" en la pestaña Actions (el `schedule` aún no dispara; ver nota abajo) | ✅ |
+| `evidencia-e2e.png` | Prueba E2E en producción: login, panel de vencer, listado con las 5 licitaciones y `/api/docs` | ✅ |
 
 ## Cómo generar la evidencia del envío
 
@@ -24,19 +24,38 @@ Archivos de evidencia del proyecto. Guardar cada uno en cuanto se genere (no esp
 3. Tras ~3 min, repetir el llamado: A aparece como `perdida` (reason `vencimiento_automatico`) y B no recibe segundo recordatorio.
 4. Capturar los correos de recordatorio recibidos → `evidencia-cron-correo.png`.
 
-## Cómo generar la evidencia del cron automático (fase 10)
+## Cómo se generó la evidencia del cron automático (fase 10)
 
-El tick ya **no se dispara a mano**: `.github/workflows/cron.yml` lo ejecuta cada
-15 minutos (`*/15 * * * *`) contra producción con
-`curl -fsS -H "Authorization: Bearer $CRON_SECRET"` y también a demanda desde la
-pestaña **Actions → Run workflow** (`workflow_dispatch`).
+Qué quedó probado en producción (2026-10-08):
 
-1. Repository secret de GitHub: `CRON_SECRET` (mismo valor que en `.env`/Vercel).
-   Sin él, el job falla con 401 y Actions lo marca en rojo.
-2. Sonda sin intervención: crear dos licitaciones `activa` (una con `deadline`
-   +47 h y otra con +3 min) y **no** llamar a `/api/cron/tick`.
-3. Esperar hasta 30 min: la primera debe recibir recordatorio y la segunda debe
-   pasar sola a `perdida` (`reason: vencimiento_automatico`, `userId: null`).
+1. **Repository secret de GitHub:** `CRON_SECRET` con el mismo valor que `.env`/Vercel,
+   creado por API (`PUT /repos/.../actions/secrets/CRON_SECRET`). Sin él, el job
+   falla con 401 y Actions lo marca en rojo.
+2. **Vercel Cron — disparador automático verificado:** `vercel.json` → `0 5 * * *`
+   (1 al día, límite del plan Hobby; la precisión es ±59 min, puede disparar
+   entre 05:00 y 05:59 UTC). El 08/10 a las **05:43:57 UTC** Vercel llamó
+   `/api/cron/tick` sin intervención de nadie y resolvió las dos sondas creadas
+   a las 04:40 en un solo tick: recordatorio enviado (`reminderSentAt` +
+   EmailLog `recordatorio → enviado`) y `activa → perdida` con
+   `userId: null` / `vencimiento_automatico`.
+3. **GitHub Actions — workflow válido pero `schedule` sin disparar:**
+   `.github/workflows/cron.yml` (`*/15 * * * *` + `workflow_dispatch`) está en
+   `main`, el workflow está en `state: active`, Actions está habilitado y el
+   job **manual** corre (run #1, 02:09 UTC, `success`). El evento `schedule` no
+   se ha ejecutado en 12+ ranuras consecutivas (02:15–06:00 UTC) pese a un
+   re-push del archivo: limitación documentada en §13 del README raíz. El botón
+   **Actions → Run workflow** sí sirve para forzar un tick a mano.
+
+Pasos para reproducir la evidencia:
+
+1. Crear dos sondas `activa` (una con deadline +47 h y otra con +5 min) y
+   **no** llamar a `/api/cron/tick`.
+2. Esperar la ventana de Vercel Cron (05:00–05:59 UTC). **Ojo:** no ejecutar
+   `npm test` mientras esperas — los tests llaman `runTick()` contra esta misma
+   BD y resolverían las sondas antes que el cron (pasó y hay que rehacerlas).
+3. Verificar en BD: `reminderSentAt` + EmailLog del recordatorio en la R;
+   transición `activa → perdida` con `userId: null` y
+   `reason: vencimiento_automatico` en la V.
 4. Capturas: detalle de cada licitación (`evidencia-cron-recordatorio.png`,
    `evidencia-cron-vencimiento.png`) e historial de Actions
    (`evidencia-cron-actions.png`).
@@ -45,8 +64,8 @@ pestaña **Actions → Run workflow** (`workflow_dispatch`).
 
 | Comprobación | Resultado |
 |---|---|
-| Archivos añadidos en los 40 commits del historial (`git log --all --diff-filter=A --name-only`) | Único archivo de entorno: `.env.example` con placeholders; `.env*` está en `.gitignore` (excepto `.env.example`) |
-| Búsqueda de JWTs (`eyJhbGciOi…`) y claves tipo `re_…` en todo el historial | 0 coincidencias |
+| Archivos añadidos en los 47 commits del historial (`git log --all --diff-filter=A --name-only`) | Único archivo de entorno: `.env.example` con placeholders; `.env*` está en `.gitignore` (excepto `.env.example`) |
+| Búsqueda de JWTs (`eyJhbGciOi…`) y claves tipo `re_…` en todo el historial | 0 coincidencias reales (el único texto que matchea es esta propia tabla, que contiene los patrones de búsqueda) |
 | URLs del remoto (`git remote -v`) | Sin tokens ni credenciales |
 | `.env` local | Gitignored, nunca versionado |
 
