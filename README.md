@@ -325,7 +325,7 @@ sequenceDiagram
 
 **Disparadores en producción:**
 - `.github/workflows/cron.yml` → tick cada 15 min con `curl -fsS -H "Authorization: Bearer $CRON_SECRET"` (el secreto vive como *repository secret* de GitHub; botón **Run workflow** para dispararlo a mano, ver §12).
-- `vercel.json` → respaldo diario a las 08:00 UTC; Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente si la variable existe en el proyecto.
+- `vercel.json` → respaldo diario a las 05:00 UTC; Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente si la variable existe en el proyecto.
 
 ## 9. API
 
@@ -477,7 +477,7 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 
 **Limitaciones asumidas hoy:**
 
-- **El tick de cron depende del repository secret `CRON_SECRET`:** el workflow `.github/workflows/cron.yml` está versionado, pero sin ese secreto en GitHub la petición falla con 401 (Actions marcaría el job en rojo). De respaldo, Vercel Cron corre a diario a las 08:00 UTC.
+- **El tick de cron depende del repository secret `CRON_SECRET`:** el workflow `.github/workflows/cron.yml` está versionado, pero sin ese secreto en GitHub la petición falla con 401 (Actions marcaría el job en rojo). De respaldo, Vercel Cron corre a diario a las 05:00 UTC.
 - **Endpoints de modificación/borrado** de usuarios, clientes y productos: solo existen listado y creación (`GET`/`POST`).
 - **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key`, pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
 - **Resend sin dominio verificado:** remitente `onboarding@resend.dev`, entrega solo al titular y a Spam. Pendiente verificar dominio (§4).
