@@ -43,7 +43,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | Supabase Storage | — | Subida de PDFs con signed URLs y URL pública verificable como evidencia |
 | Resend | 6.32 | Correo real con adjunto, `Idempotency-Key` para reintentos sin duplicar |
 | Vercel | — | Deploy continuo desde GitHub, variables de entorno, health check y Vercel Cron de respaldo (`vercel.json`) |
-| cron-job.org | — | Tick cada 15 min en producción, fuera del límite de Vercel Hobby |
+| GitHub Actions | — | Tick cada 15 min (`*/15 * * * *` + `workflow_dispatch`) contra producción, fuera del límite de Vercel Hobby; historial en la pestaña **Actions** del repo |
 | Vitest | 3.2 | Tests unitarios e de integración contra BD real |
 | Zod | 4.6 | Validación de entrada en routes y `.env` |
 
@@ -110,7 +110,7 @@ flowchart LR
     V --> DB[(Supabase Postgres)]
     V --> S[(Supabase Storage)]
     V --> R[Resend: correo con adjunto]
-     J[cron-job.org ⏳] -->|GET /api/cron/tick| V
+     J[GitHub Actions ✅] -->|GET /api/cron/tick| V
 ```
 
 ### Convenciones
@@ -324,7 +324,7 @@ sequenceDiagram
 **Orden importa:** se vence primero para no recordar una licitación ya vencida.
 
 **Disparadores en producción:**
-- `cron-job.org` → tick cada 15 min (configuración manual, ver §12).
+- `.github/workflows/cron.yml` → tick cada 15 min con `curl -fsS -H "Authorization: Bearer $CRON_SECRET"` (el secreto vive como *repository secret* de GitHub; botón **Run workflow** para dispararlo a mano, ver §12).
 - `vercel.json` → respaldo diario a las 08:00 UTC; Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente si la variable existe en el proyecto.
 
 ## 9. API
@@ -426,7 +426,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" $BASE/api/cron/tick
 | **Sanitizar el nombre de archivo** y validar que el `path` empieza con `tenders/{id}/` | Evita path traversal y que un cliente confirme archivos ajenos | Confiar en el `path` que envía el cliente |
 | **BD antes que Storage** al reemplazar documento: se guarda la referencia nueva y recién ahí se borra la anterior | Una referencia rota es peor que un archivo huérfano en Storage | Borrar primero (ventana con `proposalUrl` colgando) |
 | Bucket `proposals` **público** | La URL del documento debe ser accesible y verificable como evidencia de entrega | Bucket privado + `createSignedUrl` temporal (más seguro, pero la URL no sirve como evidencia persistente) |
-| **Cron externo (cron-job.org)** en vez de solo Vercel Cron | El plan Hobby de Vercel solo admite ticks diarios; el recordatorio necesita granularidad de 15 min. `vercel.json` queda como respaldo diario | Depender solo de Vercel Cron (mínimo 1/día, no sirve para recordatorios) |
+| **Cron externo (GitHub Actions)** en vez de solo Vercel Cron | El plan Hobby de Vercel solo admite ticks diarios; el recordatorio necesita granularidad de 15 min. El workflow corre en el repo (público), sin cuenta en servicios de terceros, y su historial sirve de evidencia. `vercel.json` queda como respaldo diario | Depender solo de Vercel Cron (mínimo 1/día, no sirve para recordatorios) |
 
 ## 11. Pruebas
 
@@ -450,7 +450,7 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 | `money.test.ts` | Conversión a centavos enteros: punto/como de miles, formato `es-PE`, símbolos, vacíos, negativos y sumas sin error de punto flotante |
 | `docs.test.ts` | `/api/openapi.json` público (≥ 25 rutas y ≥ 26 operaciones), Swagger UI en `/api/docs` y que las mutaciones sigan exigiendo sesión |
 
-**No se automatiza:** el correo real y el tick de cron-job.org en producción (se verifican a mano con las evidencias de §12).
+**No se automatiza:** el correo real (se verifica a mano con las evidencias de §12). El tick de cron **sí** está automatizado en producción: GitHub Actions cada 15 min + Vercel Cron diario de respaldo.
 
 **Frontend (fases 8-9):** cada pantalla se verificó con un smoke E2E en Playwright: login → crear → buscar/filtrar → logout (fase 8) y, en la fase 9, detalle (alta/baja de productos, aviso de presupuesto excedido, 404), documento + envío (rechazo de no-PDF, doble clic = un solo envío), ciclo completo (finalizar → facturar → pago excesivo bloqueado → cobrar) y panel de vencimientos (incluye las próximas, excluye lejanas y borradores), revisando además que no hubiera errores JS ni respuestas 5xx. Los scripts son temporales y no se versionan; la suite automatizada de Vitest sigue siendo solo backend.
 
@@ -477,7 +477,7 @@ Corren contra la **BD de desarrollo** con usuarios de test (`test-admin@example.
 
 **Limitaciones asumidas hoy:**
 
-- **cron-job.org requiere cuenta externa:** el tick está implementado y desplegado, pero la tarea recurrente cada 15 min se configura a mano en la cuenta (§8); de respaldo, Vercel Cron corre a diario a las 08:00 UTC.
+- **El tick de cron depende del repository secret `CRON_SECRET`:** el workflow `.github/workflows/cron.yml` está versionado, pero sin ese secreto en GitHub la petición falla con 401 (Actions marcaría el job en rojo). De respaldo, Vercel Cron corre a diario a las 08:00 UTC.
 - **Endpoints de modificación/borrado** de usuarios, clientes y productos: solo existen listado y creación (`GET`/`POST`).
 - **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key`, pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
 - **Resend sin dominio verificado:** remitente `onboarding@resend.dev`, entrega solo al titular y a Spam. Pendiente verificar dominio (§4).

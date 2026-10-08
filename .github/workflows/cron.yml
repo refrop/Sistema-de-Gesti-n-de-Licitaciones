@@ -1,0 +1,19 @@
+name: Tick de licitaciones
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tick:
+    name: GET /api/cron/tick
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vencimientos y recordatorios
+        run: |
+          curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://sistema-de-gesti-n-de-licitaciones.vercel.app/api/cron/tick
