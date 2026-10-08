@@ -70,8 +70,8 @@ Pasos para reproducir la evidencia:
 | `.env` local | Gitignored, nunca versionado |
 
 Conclusión: **no hay secretos en el historial de Git**. Aun así, después de la
-evaluación se rotan las credenciales demo (admin/user) y la `RESEND_API_KEY`
-(ver §13 del README raíz).
+evaluación se rotan las credenciales demo (admin/user) y las API keys de correo
+(`RESEND_API_KEY` / `BREVO_API_KEY`, ver §13 del README raíz).
 
 ## Cómo se hicieron los smokes de Playwright (fase 9-10)
 

@@ -8,6 +8,10 @@ const USER = { email: "test-user@example.com", password: "TestPass123!" };
 
 type Session = { status: number; cookie: string | null };
 
+// Usuarios creados por los tests: se borran en afterAll para no acumular
+// residuo en la BD compartida (ver db-report.js).
+const createdEmails: string[] = [];
+
 async function login(email: string, password: string): Promise<Session> {
   const res = await app.request("/api/auth/login", {
     method: "POST",
@@ -45,6 +49,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (createdEmails.length > 0) {
+    await db.user.deleteMany({ where: { email: { in: createdEmails } } });
+  }
   await db.$disconnect();
 });
 
@@ -133,6 +140,7 @@ describe("autorización por rol", () => {
     });
     expect(res.status).toBe(201);
     const body = await res.json();
+    createdEmails.push(email);
     expect(body.email).toBe(email);
     expect(body).not.toHaveProperty("passwordHash");
     expect(body.createdById).toBeTruthy();

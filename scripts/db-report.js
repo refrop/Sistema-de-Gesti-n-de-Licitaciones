@@ -111,7 +111,18 @@ function check(ok, label, detail) {
     const match = await bcrypt.compare(process.env.SEED_ADMIN_PASSWORD, admin.password_hash);
     check(match, "password hash coincide con SEED_ADMIN_PASSWORD");
   }
-  check(users.length === 1, "solo 1 usuario en BD", `${users.length} usuario(s)`);
+  // Seed = admin + usuario demo (prisma/seed.ts); auth.test.ts además upsertea
+  // test-admin/test-user (documentados en §11) — cualquier otro usuario es residuo.
+  const seedEmails = new Set([
+    process.env.SEED_ADMIN_EMAIL,
+    process.env.SEED_USER_EMAIL ?? "user@example.com",
+  ]);
+  const testEmails = new Set(["test-admin@example.com", "test-user@example.com"]);
+  const others = users.filter((u) => !seedEmails.has(u.email) && !testEmails.has(u.email));
+  const userDetail =
+    `${users.length} usuario(s)` +
+    (others.length ? `; residuo: ${others.map((u) => u.email).join(", ")}` : "");
+  check(others.length === 0, "solo usuarios de seed (+ 2 de tests §11)", userDetail);
 
   console.log(`\n${failures === 0 ? "TODO OK" : failures + " FALLO(S)"}`);
   await p.$disconnect();

@@ -41,7 +41,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | Prisma | 6.19 | ORM tipado, migraciones versionadas y `Decimal` para dinero |
 | Supabase (Postgres) | — | BD gestionada con pooler; migraciones vía `DIRECT_URL` |
 | Supabase Storage | — | Subida de PDFs con signed URLs y URL pública verificable como evidencia |
-| Resend | 6.32 | Correo real con adjunto, `Idempotency-Key` para reintentos sin duplicar |
+| Resend / Brevo | 6.32 / — | Correo real con adjunto: SDK `resend` (con `Idempotency-Key`) o Brevo con `fetch` nativo (sin dependencia extra); proveedor elegido con `EMAIL_PROVIDER` (§4) |
 | Vercel | — | Deploy continuo desde GitHub, variables de entorno, health check y Vercel Cron diario (`vercel.json`, 05:00 UTC, disparo automático verificado) |
 | GitHub Actions | — | Workflow de tick (`*/15 * * * *` + `workflow_dispatch`) contra producción, fuera del límite de Vercel Hobby; el botón **Run workflow** funciona y el evento `schedule` aún no dispara en el repo (ver §13) |
 | Vitest | 3.2 | Tests unitarios e de integración contra BD real |
@@ -83,7 +83,7 @@ src/
     lib/                    # db, env, email, storage, pagination, html
 prisma/                     # schema.prisma, migrations/, seed.ts
 tests/                      # Vitest (13 archivos, 108 tests)
-scripts/                    # db-report, send-evidence, cron-evidence, check-transitions
+scripts/                    # db-report, send-evidence, cron-evidence
 docs/                       # Evidencias (ver §12)
 .env.example
 ```
@@ -197,6 +197,9 @@ Comandos útiles: `npm run typecheck` · `npm run lint` · `npm run build`.
 4. `EMAIL_REDIRECT_TO` **no aplica** con Brevo: el correo siempre llega al destinatario original (`EmailLog.to_email` conserva el destino).
 5. `Idempotency-Key` es una función de Resend; con Brevo la protección contra duplicados del recordatorio es la reclamación atómica en BD (`reminderSentAt`).
 6. Límite de Brevo: adjunto **< 4 MB** y 20 MB por correo; la app limita la subida a 4 MB (§13).
+7. `EMAIL_FROM` debe coincidir **exactamente** con un remitente verificado en Brevo (un valor que no coincida hace que Brevo rechace: `EmailLog → fallido` con el motivo en `error`).
+8. **Settings → Security → Authorised IPs:** si está activa la restricción por IP, Vercel (con IPs de salida variables) recibirá `401 unrecognised IP` — déjala desactivada.
+9. `EmailLog(enviado)` = el proveedor **aceptó** el correo; la entrega final (inbox / spam / bounce) se confirma en **Transactional → Email activity** de Brevo (§13: sin webhook de bounces).
 
 Cambiar de proveedor = cambiar `EMAIL_PROVIDER` (`resend` ↔ `brevo`); el default es `resend` para no romper entornos existentes. Si falta la API key del proveedor elegido la app **no arranca** (error claro en el arranque).
 
@@ -228,7 +231,7 @@ erDiagram
 | `TenderProduct` | Línea de producto en la licitación | `quantity`, **`unitPrice` (copia del `basePrice` al agregar)**, unique `(tenderId, productId)` |
 | `Payment` | Pagos de la licitación | `amount > 0` (CHECK), `paidAt`, `note` |
 | `TenderTransition` | Historial de estados | `fromStatus` (null en creación), `toStatus`, `userId` (null = sistema), `reason` |
-| `EmailLog` | Trazabilidad de correos | `type` (envio/recordatorio), `status` (enviado/fallido), `providerId` de Resend, `error` |
+| `EmailLog` | Trazabilidad de correos | `type` (envio/recordatorio), `status` (enviado/fallido), `providerId` del proveedor (Resend/Brevo), `error` |
 
 Decisiones de modelado: `borrador` es estado explícito en BD (aunque el enunciado lo llame implícito); dinero siempre en `NUMERIC(12,2)` + `Decimal` de Prisma (nunca `float`); fechas en UTC (`timestamptz`).
 
@@ -460,6 +463,8 @@ Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler
 | `tenders.test.ts` | HTTP: crear/listar con filtros, `finalize`/`lose`, `expiring`, detalle con totales |
 | `proposal.test.ts` | **Storage real**: validación PDF/10 MB, flujo upload→confirm, path ajeno → 400, revalidación de estado, borrado del archivo anterior, y el **proxy `POST /:id/proposal/upload`** (401 sin sesión, 400 por tipo/contenido no PDF, 201 con nombre saneado, 409 si no está en borrador) |
 | `send.test.ts` | **Resend mockeado**: missing proposal, deadline, sin productos, estado inválido, OK → `activa` + `EmailLog` + idempotency key, `EMAIL_FAILED` 502 sin transición, doble envío concurrente (1 gana, 1 → 409) |
+| `email-redirect.test.ts` | `EMAIL_REDIRECT_TO` con Resend: destino directo sin la variable, envío al titular con el original en el cuerpo (y sin nota si ya es el titular), HTML escapado |
+| `brevo.test.ts` | Adaptador Brevo: body/headers correctos (sender, destinatario, adjunto base64, `api-key`), error de API → `EMAIL_FAILED` 502, falta de `BREVO_API_KEY` → no arranca, default `resend` sin cambios |
 | `payments.test.ts` | Facturación (default = total, monto custom, 409 doble), pagos (422 con `details.balance`, auto-`cobrada`) y **concurrencia**: dos pagos simultáneos no exceden el saldo; una sola transición a `cobrada` |
 | `jobs.test.ts` | Vencimiento (reason, `userId: null`, idempotente), recordatorio (ventana, sin duplicar, fallo → reintento, **reclamo concurrente = 1 correo**) y tick HTTP (401 sin secret, resumen del tick) |
 | `money.test.ts` | Conversión a centavos enteros: punto/como de miles, formato `es-PE`, símbolos, vacíos, negativos y sumas sin error de punto flotante |
@@ -496,6 +501,7 @@ Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler
 - **Endpoints de modificación/borrado** de usuarios, clientes y productos: solo existen listado y creación (`GET`/`POST`).
 - **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key` (Resend; con Brevo no hay idempotencia en la API), pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
 - **Resend sin dominio verificado (solo con `EMAIL_PROVIDER=resend`):** remitente `onboarding@resend.dev`; con `EMAIL_REDIRECT_TO` el correo se entrega al titular (destinatario original en el cuerpo y `EmailLog.to_email`), pero llega a Spam. **Por eso existe el segundo proveedor:** con `EMAIL_PROVIDER=brevo` y un remitente individual verificado el correo llega a cualquier cliente sin dominio propio (§4); verificar un dominio en Resend permitiría volver y quitar el redirect.
+- **Sin webhook de bounces:** `EmailLog(enviado)` significa que el proveedor **aceptó** el correo; si el destino lo filtra a Spam o rebota, la app no se entera. La entrega se confirma en el dashboard del proveedor (Brevo: **Transactional → Email activity**).
 - **Sin rate limit** ni bloqueo por intentos fallidos de login.
 - **Spec OpenAPI escrito a mano** (`src/server/api/openapi.ts`) en vez de `app.doc()`: la app instancia `OpenAPIHono`, pero las rutas son `Hono` planos, así que `app.doc()` habría devuelto un documento vacío. Un spec propio sigue siendo válido para Swagger UI y se testea (`docs.test.ts`).
 - **Subida de PDF limitada a 4 MB en el cliente** (Vercel admite ~4.5 MB de cuerpo); el servicio, la API y los tests siguen permitiendo 10 MB.
