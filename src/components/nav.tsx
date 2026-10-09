@@ -32,13 +32,14 @@ export function Nav({ user }: { user: SessionUser }) {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border bg-sidebar/85 backdrop-blur-xl">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4 sm:gap-4 sm:px-6">
         <Link
           href="/tenders"
           className="font-heading text-sm font-semibold tracking-tight whitespace-nowrap"
         >
-          SisGest
+          <span className="text-white">Sis</span>
+          <span className="text-nebula-lavender">Gest</span>
         </Link>
         <nav className="-mx-1 flex flex-1 items-center gap-1 overflow-x-auto">
           {LINKS.filter((link) => !link.adminOnly || user.role === "admin").map((link) => {
@@ -49,10 +50,10 @@ export function Nav({ user }: { user: SessionUser }) {
                 href={link.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "rounded-md px-2.5 py-1.5 text-sm whitespace-nowrap transition-colors",
+                  "rounded-lg px-2.5 py-1.5 text-sm whitespace-nowrap transition-all",
                   active
-                    ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    ? "border border-nebula-violet/35 bg-nebula-violet/15 font-semibold text-white shadow-[0_0_18px_-6px_rgba(183,109,255,0.55)]"
+                    : "border border-transparent text-secondary-foreground hover:bg-accent hover:text-white",
                 )}
               >
                 {link.label}
@@ -62,8 +63,8 @@ export function Nav({ user }: { user: SessionUser }) {
         </nav>
         <div className="flex items-center gap-3">
           <div className="hidden text-right leading-tight sm:block">
-            <p className="text-sm font-medium">{user.name}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm font-medium text-white">{user.name}</p>
+            <p className="font-mono text-[10px] tracking-wider text-nebula-lavender/80 uppercase">
               {user.role === "admin" ? "Administrador" : "Usuario"}
             </p>
           </div>

@@ -28,7 +28,7 @@ export function PaginationBar({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+    <div className="flex flex-wrap items-center justify-between gap-3 font-mono text-xs text-muted-foreground">
       <span>
         {total} registro{total === 1 ? "" : "s"}
       </span>

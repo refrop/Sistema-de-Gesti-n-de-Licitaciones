@@ -84,7 +84,7 @@ export function ClientCreateDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button>
+        <Button className="vv-shine-btn">
           <Plus />
           Nuevo cliente
         </Button>
@@ -134,7 +134,7 @@ export function ClientCreateDialog() {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" className="vv-shine-btn" disabled={pending}>
               {pending ? "Guardando…" : "Crear cliente"}
             </Button>
           </DialogFooter>

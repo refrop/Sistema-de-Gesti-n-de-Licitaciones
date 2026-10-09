@@ -17,6 +17,15 @@ const VARIANTS: Record<
   perdida: "destructive",
 };
 
+const STATUS_CLASS: Record<TenderStatusValue, string> = {
+  borrador: "",
+  activa: "border-nebula-cyan/35 bg-nebula-cyan/15 text-nebula-cyan",
+  finalizada: "border-nebula-lavender/35 bg-nebula-lavender/10 text-nebula-lavender",
+  por_cobrar: "border-nebula-violet/35 bg-nebula-violet/15 text-nebula-lavender",
+  cobrada: "border-nebula-cyan/35 bg-nebula-cyan/15 text-nebula-cyan",
+  perdida: "border-destructive/35 bg-destructive/15 text-destructive",
+};
+
 export function TenderStatusBadge({
   status,
   className,
@@ -25,7 +34,10 @@ export function TenderStatusBadge({
   className?: string;
 }) {
   return (
-    <Badge variant={VARIANTS[status]} className={cn(className)}>
+    <Badge
+      variant={VARIANTS[status]}
+      className={cn("font-mono tracking-wider uppercase", STATUS_CLASS[status], className)}
+    >
       {TENDER_STATUS_LABELS[status]}
     </Badge>
   );

@@ -40,7 +40,7 @@ export function DetailHeader({ tender }: { tender: SerializedTender }) {
             {tender.deadline ? formatDateTime(tender.deadline) : "—"}
           </dd>
           {urgency && (
-            <dd className="text-xs text-amber-600 dark:text-amber-500">{urgency}</dd>
+            <dd className="text-xs text-nebula-lavender">{urgency}</dd>
           )}
         </div>
         <div>

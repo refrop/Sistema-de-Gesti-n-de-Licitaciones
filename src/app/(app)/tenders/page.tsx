@@ -49,7 +49,7 @@ export default async function TendersPage({
         title="Licitaciones"
         description="Procesos de licitación, propuestas y cobros."
         action={
-          <Button asChild>
+          <Button asChild className="vv-shine-btn">
             <Link href="/tenders/new">
               <Plus />
               Nueva licitación

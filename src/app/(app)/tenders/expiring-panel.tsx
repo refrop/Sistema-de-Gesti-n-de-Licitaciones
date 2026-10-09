@@ -8,7 +8,7 @@ export async function ExpiringPanel({ days = 3 }: { days?: number }) {
   if (tenders.length === 0) return null;
 
   return (
-    <section className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/5 p-4">
+    <section className="mb-6 rounded-lg border border-nebula-violet/40 bg-nebula-violet/5 p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
           <Clock className="size-4" />
@@ -32,7 +32,7 @@ export async function ExpiringPanel({ days = 3 }: { days?: number }) {
                 <span className="block truncate text-sm font-medium">{tender.title}</span>
                 <span className="mt-1 block text-xs text-muted-foreground">
                   {tender.client.name} ·{" "}
-                  <span className={urgent ? "font-medium text-amber-600 dark:text-amber-500" : ""}>
+                  <span className={urgent ? "font-medium text-nebula-lavender" : ""}>
                     {formatDateTime(tender.deadline)}
                   </span>
                 </span>

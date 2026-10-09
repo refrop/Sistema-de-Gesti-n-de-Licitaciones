@@ -85,7 +85,7 @@ export function ProductCreateDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button>
+        <Button className="vv-shine-btn">
           <Plus />
           Nuevo producto
         </Button>
@@ -142,7 +142,7 @@ export function ProductCreateDialog() {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" className="vv-shine-btn" disabled={pending}>
               {pending ? "Guardando…" : "Crear producto"}
             </Button>
           </DialogFooter>

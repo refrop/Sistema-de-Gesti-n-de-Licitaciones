@@ -61,10 +61,10 @@ void main() {
   float density = n * 0.8 + n2 * 0.5;
   density = smoothstep(0.28, 1.0, density + 0.3 - r * 0.6);
 
-  vec3 cDeep = vec3(0.015, 0.02, 0.045);
-  vec3 cTeal = vec3(0.08, 0.5, 0.62);
-  vec3 cViolet = vec3(0.36, 0.2, 0.75);
-  vec3 cRose = vec3(0.7, 0.28, 0.5);
+  vec3 cDeep = vec3(0.023, 0.027, 0.075);
+  vec3 cTeal = vec3(0.22, 0.74, 0.97);
+  vec3 cViolet = vec3(0.72, 0.42, 1.0);
+  vec3 cRose = vec3(0.85, 0.27, 0.94);
   float h = fract(uHue + uTime * 0.0015);
   vec3 tint = mix(cTeal, cViolet, 0.5 + 0.5 * sin(6.2831 * h));
   tint = mix(tint, cRose, 0.3 + 0.3 * sin(6.2831 * (h + 0.37)));

@@ -95,7 +95,7 @@ export function CyclePanel({ tender }: { tender: SerializedTender }) {
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              className="flex-1"
+              className="vv-shine-btn flex-1"
               disabled={busy !== null}
               onClick={() =>
                 void run("finalize", `/api/tenders/${tender.id}/finalize`, undefined, "Marcada como ganada")

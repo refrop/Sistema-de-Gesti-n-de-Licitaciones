@@ -7,6 +7,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-nebula-violet: var(--nebula-violet);
+  --color-nebula-lavender: var(--nebula-lavender);
+  --color-nebula-magenta: var(--nebula-magenta);
+  --color-nebula-cyan: var(--nebula-cyan);
+  --color-nebula-blue: var(--nebula-blue);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
@@ -26,6 +31,7 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -50,72 +56,272 @@
 
 :root {
   --font-sans: var(--font-geist-sans);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* Paleta cosmic/nebula */
+  --nebula-violet: #b76dff;
+  --nebula-lavender: #ddb7ff;
+  --nebula-magenta: #fbabff;
+  --nebula-cyan: #7bd0ff;
+  --nebula-blue: #00a6e0;
+  --nebula-deep: #842bd2;
+
+  --background: #060713;
+  --foreground: #e2e1f3;
+  --card: #12132d;
+  --card-foreground: #e2e1f3;
+  --popover: #161836;
+  --popover-foreground: #e2e1f3;
+  --primary: #b76dff;
+  --primary-foreground: #ffffff;
+  --secondary: #161836;
+  --secondary-foreground: #cfc2d6;
+  --muted: #161836;
+  --muted-foreground: #988d9f;
+  --accent: #161836;
+  --accent-foreground: #ffffff;
+  --destructive: #ffb4ab;
+  --destructive-foreground: #3d0a08;
+  --border: #1f2042;
+  --input: #1f2042;
+  --ring: #b76dff;
+  --chart-1: #b76dff;
+  --chart-2: #ddb7ff;
+  --chart-3: #7bd0ff;
+  --chart-4: #00a6e0;
+  --chart-5: #fbabff;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #090a18;
+  --sidebar-foreground: #e2e1f3;
+  --sidebar-primary: #b76dff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #161836;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1f2042;
+  --sidebar-ring: #b76dff;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* Glows ambientales fijos (ultravioleta, magenta y starlight) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(600px 600px at 6% 2%, rgb(139 92 246 / 0.14), transparent 65%),
+    radial-gradient(560px 560px at 97% 28%, rgb(217 70 239 / 0.1), transparent 65%),
+    radial-gradient(650px 650px at 80% 98%, rgb(56 189 248 / 0.1), transparent 65%),
+    radial-gradient(500px 500px at 28% 94%, rgb(132 43 210 / 0.12), transparent 65%);
+}
+
+/* Rejilla cósmica de fondo (puntos violeta) */
+.cosmic-grid {
+  background-image: radial-gradient(circle, rgb(168 85 247 / 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Título con degradado firma de nebulosa */
+.text-nebula-gradient {
+  background: linear-gradient(135deg, #fbabff 0%, #ddb7ff 40%, #7bd0ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Botón primario con degradado nebulosa + glow */
+.btn-nebula-gradient {
+  background: linear-gradient(135deg, #b76dff 0%, #842bd2 50%, #00a6e0 100%);
+  box-shadow:
+    0 4px 20px rgb(183 109 255 / 0.35),
+    0 0 12px rgb(123 208 255 / 0.2);
+}
+.btn-nebula-gradient:hover {
+  box-shadow:
+    0 6px 26px rgb(183 109 255 / 0.5),
+    0 0 18px rgb(123 208 255 / 0.35);
+  transform: translateY(-1px);
+}
+.btn-nebula-gradient:focus-visible {
+  box-shadow:
+    0 0 0 3px rgb(6 7 19 / 0.6),
+    0 0 0 6px rgb(183 109 255 / 0.55);
+}
+
+::selection {
+  background: rgb(183 109 255 / 0.3);
+  color: #ffffff;
+}
+
+/* Scrollbars con estética nebulosa (Firefox/Chrome moderno + WebKit) */
+* {
+  scrollbar-color: rgb(183 109 255 / 0.55) rgb(6 7 19 / 0.5);
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(6 7 19 / 0.5);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgb(183 109 255 / 0.6), rgb(123 208 255 / 0.5));
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgb(183 109 255 / 0.9), rgb(123 208 255 / 0.75));
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ==========================================================================
+   Dropdown de selects — "tweening"
+   Al abrir: las opciones se deslizan hacia afuera desde el botón (stagger
+   top→bottom). Al cerrar: se recogen hacia el botón (stagger bottom→top).
+   El Content solo hace fade (Radix posiciona con transform inline); el
+   transform lo lleva el Viewport y cada Item.
+   ========================================================================== */
+@keyframes vv-pop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes vv-pop-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vv-pop-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes vv-pop-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+}
+@keyframes vv-item-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes vv-item-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="select-content"][data-state="open"] {
+    animation: vv-pop-fade-in 0.18s var(--vv-ease) both;
+  }
+  [data-slot="select-content"][data-state="closed"] {
+    animation: vv-pop-fade-out 0.36s var(--vv-ease) both;
+  }
+
+  [data-slot="select-content"] [data-slot="select-viewport"] {
+    transform-origin: top center;
+  }
+  [data-slot="select-content"][data-state="open"] [data-slot="select-viewport"] {
+    animation: vv-pop-slide-in 0.3s var(--vv-ease) both;
+  }
+  [data-slot="select-content"][data-state="closed"] [data-slot="select-viewport"] {
+    animation: vv-pop-slide-out 0.36s var(--vv-ease) both;
+  }
+
+  /* Stagger de opciones: apertura top→bottom, cierre bottom→top (máx. 8) */
+  [data-slot="select-content"][data-state="open"] [data-slot="select-item"] {
+    animation: vv-item-slide-in 0.28s var(--vv-ease) both;
+  }
+  [data-slot="select-content"][data-state="closed"] [data-slot="select-item"] {
+    animation: vv-item-slide-out 0.22s var(--vv-ease) both;
+  }
+  [data-slot="select-content"] [data-slot="select-item"]:nth-child(1) {
+    --vv-item-open-delay: 0ms;
+    --vv-item-close-delay: 126ms;
+  }
+  [data-slot="select-content"] [data-slot="select-item"]:nth-child(2) {
+    --vv-item-open-delay: 18ms;
+    --vv-item-close-delay: 108ms;
+  }
+  [data-slot="select-content"] [data-slot="select-item"]:nth-child(3) {
+    --vv-item-open-delay: 36ms;
+    --vv-item-close-delay: 90ms;
+  }
+  [data-slot="select-content"] [data-slot="select-item"]:nth-child(4) {
+    --vv-item-open-delay: 54ms;
+    --vv-item-close-delay: 72ms;
+  }
+  [data-slot="select-content"] [data-slot="select-item"]:nth-child(5) {
+    --vv-item-open-delay: 72ms;
+    --vv-item-close-delay: 54ms;
+  }
+  [data-slot="select-content"] [data-slot="select-item"]:nth-child(6) {
+    --vv-item-open-delay: 90ms;
+    --vv-item-close-delay: 36ms;
+  }
+  [data-slot="select-content"] [data-slot="select-item"]:nth-child(7) {
+    --vv-item-open-delay: 108ms;
+    --vv-item-close-delay: 18ms;
+  }
+  [data-slot="select-content"] [data-slot="select-item"]:nth-child(8),
+  [data-slot="select-content"] [data-slot="select-item"]:nth-child(n + 9) {
+    --vv-item-open-delay: 126ms;
+    --vv-item-close-delay: 0ms;
+  }
+
+  [data-slot="select-content"][data-state="open"] [data-slot="select-item"] {
+    animation-delay: var(--vv-item-open-delay, 0ms);
+  }
+  [data-slot="select-content"][data-state="closed"] [data-slot="select-item"] {
+    animation-delay: var(--vv-item-close-delay, 0ms);
+  }
+}
+
+/* Iconos de toasts con la paleta (más específicos que el CSS de sonner) */
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] {
+  color: var(--destructive);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--nebula-cyan);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] [data-icon] {
+  color: var(--nebula-lavender);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] [data-icon] {
+  color: var(--nebula-blue);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -133,11 +339,11 @@
 }
 
 .login-fallback {
-  background-color: #06080f;
+  background-color: #060713;
   background-image:
-    radial-gradient(1100px 750px at 72% 18%, rgb(38 130 150 / 0.28), transparent 62%),
-    radial-gradient(950px 720px at 18% 82%, rgb(96 62 178 / 0.24), transparent 66%),
-    radial-gradient(700px 520px at 50% 46%, rgb(24 52 92 / 0.55), transparent 72%);
+    radial-gradient(1100px 750px at 72% 18%, rgb(0 166 224 / 0.26), transparent 62%),
+    radial-gradient(950px 720px at 18% 82%, rgb(132 43 210 / 0.3), transparent 66%),
+    radial-gradient(700px 520px at 50% 46%, rgb(139 92 246 / 0.35), transparent 72%);
 }
 
 @layer base {
@@ -149,5 +355,227 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* ==========================================================================
+   vv-buttons — borde luminoso giratorio + shimmer de estrellas
+   Presupuesto HCI: un efecto protagonista por pantalla (1 shine por página;
+   1 shimmer en toda la app). Capas inyectadas por public/vv-buttons.js.
+   ========================================================================== */
+@property --vv-shine-a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 135deg;
+}
+@property --vv-shine-b {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 135deg;
+}
+@property --vv-shine-w {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 24deg;
+}
+@property --vv-ring-mid {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 1%;
+}
+@property --vv-ring-peak {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 2%;
+}
+@property --vv-ring-soft {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --vv-ring-full {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+:root {
+  --vv-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --vv-shine-c1: #ffffff;
+  --vv-shine-c2: #7bd0ff;
+  --vv-shine-border: 1px;
+  --vv-shine-duration: 2.8s;
+  --vv-beam: 24deg;
+  --vv-stars-speed: 1;
+  --vv-stars-density: 1;
+}
+
+.vv-shine-btn,
+.vv-shimmer-btn {
+  position: relative;
+  isolation: isolate;
+}
+
+/* --- 1) Borde luminoso giratorio (.vv-shine-btn) -------------------------- */
+.vv-shine {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: var(--vv-shine-border);
+
+  opacity: 0;
+  transition: opacity 60ms linear;
+
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+
+  animation-duration: var(--vv-shine-duration);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.vv-shine-lyr-a {
+  background-image: conic-gradient(
+    from calc(var(--vv-shine-a) - var(--vv-shine-w)),
+    transparent 0deg,
+    var(--vv-shine-c1) calc(var(--vv-shine-w) / 2),
+    var(--vv-shine-c2) var(--vv-shine-w),
+    transparent calc(var(--vv-shine-w) * 2),
+    transparent 360deg
+  );
+}
+.vv-shine-lyr-b {
+  background-image: conic-gradient(
+    from calc(var(--vv-shine-b) - var(--vv-shine-w)),
+    transparent 0deg,
+    var(--vv-shine-c1) calc(var(--vv-shine-w) / 2),
+    var(--vv-shine-c2) var(--vv-shine-w),
+    transparent calc(var(--vv-shine-w) * 2),
+    transparent 360deg
+  );
+}
+
+/* Reposo: el botón ya parece clicable (gradiente + glow); el haz es refuerzo */
+.vv-shine-btn:not(:disabled):hover .vv-shine,
+.vv-shine-btn:not(:disabled):focus-visible .vv-shine {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vv-shine-btn:not(:disabled):hover .vv-shine,
+  .vv-shine-btn:not(:disabled):focus-visible .vv-shine,
+  .vv-shine-btn:not(:disabled):active .vv-shine {
+    opacity: 0; /* lo controlan los keyframes */
+  }
+  .vv-shine-btn:not(:disabled):hover .vv-shine-lyr-a,
+  .vv-shine-btn:not(:disabled):focus-visible .vv-shine-lyr-a,
+  .vv-shine-btn:not(:disabled):active .vv-shine-lyr-a {
+    animation-name: vv-shine-a;
+  }
+  .vv-shine-btn:not(:disabled):hover .vv-shine-lyr-b,
+  .vv-shine-btn:not(:disabled):focus-visible .vv-shine-lyr-b,
+  .vv-shine-btn:not(:disabled):active .vv-shine-lyr-b {
+    animation-name: vv-shine-b;
+  }
+}
+
+@keyframes vv-shine-a {
+  0% {
+    --vv-shine-a: 135deg;
+    --vv-shine-w: 0deg;
+    opacity: 1;
+  }
+  10% {
+    --vv-shine-w: var(--vv-beam);
+  }
+  86% {
+    --vv-shine-a: -45deg;
+    --vv-shine-w: var(--vv-beam);
+    opacity: 1;
+  }
+  100% {
+    --vv-shine-a: -45deg;
+    --vv-shine-w: var(--vv-beam);
+    opacity: 0;
+  }
+}
+@keyframes vv-shine-b {
+  0% {
+    --vv-shine-b: 135deg;
+    --vv-shine-w: 0deg;
+    opacity: 1;
+  }
+  10% {
+    --vv-shine-w: var(--vv-beam);
+  }
+  86% {
+    --vv-shine-b: 315deg;
+    --vv-shine-w: var(--vv-beam);
+    opacity: 1;
+  }
+  100% {
+    --vv-shine-b: 315deg;
+    --vv-shine-w: var(--vv-beam);
+    opacity: 0;
+  }
+}
+
+/* --- 2) Shimmer de estrellas (.vv-shimmer-btn) ---------------------------- */
+.vv-shimmer-mask {
+  --vv-ring-mid: 1%;
+  --vv-ring-peak: 2%;
+  --vv-ring-soft: 0;
+  --vv-ring-full: 0;
+
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  overflow: hidden;
+
+  -webkit-mask: radial-gradient(
+    115% 150% at 50% 50%,
+    #0000 0,
+    rgba(0, 0, 0, var(--vv-ring-soft)) var(--vv-ring-mid),
+    rgba(0, 0, 0, var(--vv-ring-full)) var(--vv-ring-peak),
+    #0000 100%
+  );
+  mask: radial-gradient(
+    115% 150% at 50% 50%,
+    #0000 0,
+    rgba(0, 0, 0, var(--vv-ring-soft)) var(--vv-ring-mid),
+    rgba(0, 0, 0, var(--vv-ring-full)) var(--vv-ring-peak),
+    #0000 100%
+  );
+
+  transition:
+    --vv-ring-mid 0.9s var(--vv-ease),
+    --vv-ring-peak 0.9s var(--vv-ease),
+    --vv-ring-soft 0.9s var(--vv-ease),
+    --vv-ring-full 0.9s var(--vv-ease);
+}
+
+.vv-shimmer-btn:not(:disabled):hover .vv-shimmer-mask,
+.vv-shimmer-btn:not(:disabled):focus-visible .vv-shimmer-mask {
+  --vv-ring-mid: 16%;
+  --vv-ring-peak: 38%;
+  --vv-ring-soft: 0.55;
+  --vv-ring-full: 1;
+}
+
+.vv-shimmer {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vv-shimmer-mask {
+    transition: none;
   }
 }

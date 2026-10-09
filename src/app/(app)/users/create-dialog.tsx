@@ -91,7 +91,7 @@ export function UserCreateDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button>
+        <Button className="vv-shine-btn">
           <Plus />
           Nuevo usuario
         </Button>
@@ -152,7 +152,7 @@ export function UserCreateDialog() {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" className="vv-shine-btn" disabled={pending}>
               {pending ? "Guardando…" : "Crear usuario"}
             </Button>
           </DialogFooter>

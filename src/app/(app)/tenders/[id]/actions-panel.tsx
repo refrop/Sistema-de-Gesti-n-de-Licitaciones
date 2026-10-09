@@ -142,7 +142,7 @@ export function ActionsPanel({ tender }: { tender: SerializedTender }) {
             <>
               <Button
                 type="button"
-                className="w-full"
+                className="w-full vv-shine-btn"
                 disabled={sending || !proposal}
                 onClick={() => void send()}
               >

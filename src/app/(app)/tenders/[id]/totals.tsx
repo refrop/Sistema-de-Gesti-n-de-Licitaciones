@@ -15,14 +15,14 @@ function Stat({
   highlight?: boolean;
 }) {
   return (
-    <Card className={highlight ? "border-amber-500/40" : undefined}>
+    <Card className={highlight ? "border-nebula-violet/50 shadow-[0_0_22px_-8px_rgba(183,109,255,0.55)]" : undefined}>
       <CardContent className="pt-5">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {label}
         </p>
         <p
           className={`mt-1 text-2xl font-semibold tracking-tight ${
-            highlight ? "text-amber-600 dark:text-amber-500" : ""
+            highlight ? "text-nebula-lavender" : ""
           }`}
         >
           {value}

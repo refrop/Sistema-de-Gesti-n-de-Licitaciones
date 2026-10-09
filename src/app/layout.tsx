@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -28,10 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} dark`}>
       <body className="antialiased">
         {children}
-        <Toaster theme="light" position="top-right" />
+        <Toaster theme="dark" position="top-right" />
+        <Script src="/vv-buttons.js" strategy="afterInteractive" />
       </body>
     </html>
   );
