@@ -310,6 +310,71 @@ body::before {
   }
 }
 
+/* Resaltado de opciones del select: lift con offset (izq. y arriba) al hover.
+   Reposo: capa oculta en su posición. Hover/focus: se desplaza -4px/-4px
+   y se revela; al salir vuelve suavemente a su posición y se oculta. */
+[data-slot="select-item"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--accent);
+  opacity: 0;
+  transform: translate(0, 0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="select-item"]::before {
+    transition:
+      transform 0.25s var(--vv-ease),
+      opacity 0.25s var(--vv-ease);
+  }
+  [data-slot="select-item"]:hover::before,
+  [data-slot="select-item"]:focus::before,
+  [data-slot="select-item"][data-highlighted]::before {
+    opacity: 1;
+    transform: translate(-4px, -4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="select-item"]:hover::before,
+  [data-slot="select-item"]:focus::before,
+  [data-slot="select-item"][data-highlighted]::before {
+    opacity: 1;
+  }
+}
+
+/* Shake de inputs al tipear las credenciales demo del login (0.2s por letra) */
+@keyframes vv-type-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  15% {
+    transform: translateX(-3px) rotate(-0.5deg);
+  }
+  30% {
+    transform: translateX(3px) rotate(0.5deg);
+  }
+  45% {
+    transform: translateX(-2.5px) rotate(-0.35deg);
+  }
+  60% {
+    transform: translateX(2px) rotate(0.3deg);
+  }
+  80% {
+    transform: translateX(-1px) rotate(-0.15deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vv-type-shake {
+    animation: vv-type-shake 0.2s ease;
+  }
+}
+
 /* Iconos de toasts con la paleta (más específicos que el CSS de sonner) */
 [data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] {
   color: var(--destructive);

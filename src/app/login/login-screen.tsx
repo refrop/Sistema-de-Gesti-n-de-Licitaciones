@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -14,16 +14,29 @@ import { NebulaField } from "@/components/atmos/nebula-field";
 import { Divider } from "@/components/atmos/reveal";
 import { SplitLines } from "@/components/atmos/split-lines";
 
+const DEMO_EMAIL = "admin@example.com";
+const DEMO_PASSWORD = "CambiaEstaClave123!";
+
 export function LoginScreen({ next }: { next: string }) {
   const router = useRouter();
   const screenRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLParagraphElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const demoRunRef = useRef(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
+  const [demoTyping, setDemoTyping] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      demoRunRef.current += 1;
+    };
+  }, []);
 
   function playExit(): Promise<void> {
     const screen = screenRef.current;
@@ -58,6 +71,7 @@ export function LoginScreen({ next }: { next: string }) {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    demoRunRef.current += 1;
     if (pending) return;
     const parsed = loginSchema.safeParse({ email, password });
     if (!parsed.success) {
@@ -78,10 +92,47 @@ export function LoginScreen({ next }: { next: string }) {
     }
   }
 
-  function fillDemo() {
-    setEmail("admin@example.com");
-    setPassword("CambiaEstaClave123!");
+  function shakeInput(input: HTMLInputElement | null) {
+    if (!input) return;
+    input.classList.remove("vv-type-shake");
+    void input.offsetWidth;
+    input.classList.add("vv-type-shake");
+  }
+
+  async function typeValue(
+    run: number,
+    full: string,
+    input: HTMLInputElement | null,
+    setValue: (value: string) => void,
+  ): Promise<boolean> {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    for (let i = 0; i < full.length; i++) {
+      if (demoRunRef.current !== run) return false;
+      setValue(full.slice(0, i + 1));
+      if (!reduced) shakeInput(input);
+      await new Promise((resolve) => setTimeout(resolve, 90));
+    }
+    return demoRunRef.current === run;
+  }
+
+  async function fillDemo() {
+    const run = ++demoRunRef.current;
+    setEmail("");
+    setPassword("");
     setErrors({});
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setEmail(DEMO_EMAIL);
+      setPassword(DEMO_PASSWORD);
+      return;
+    }
+    setDemoTyping(true);
+    try {
+      const okEmail = await typeValue(run, DEMO_EMAIL, emailInputRef.current, setEmail);
+      if (!okEmail) return;
+      await typeValue(run, DEMO_PASSWORD, passwordInputRef.current, setPassword);
+    } finally {
+      if (demoRunRef.current === run) setDemoTyping(false);
+    }
   }
 
   return (
@@ -124,6 +175,7 @@ export function LoginScreen({ next }: { next: string }) {
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     aria-invalid={Boolean(errors.email)}
+                    ref={emailInputRef}
                   />
                   {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
                 </div>
@@ -137,6 +189,7 @@ export function LoginScreen({ next }: { next: string }) {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     aria-invalid={Boolean(errors.password)}
+                    ref={passwordInputRef}
                   />
                   {errors.password && (
                     <p className="text-xs text-destructive">{errors.password}</p>
@@ -156,7 +209,8 @@ export function LoginScreen({ next }: { next: string }) {
           <button
             type="button"
             onClick={fillDemo}
-            className="font-medium text-white/80 underline underline-offset-4 transition-colors hover:text-white"
+            disabled={demoTyping}
+            className="font-medium text-white/80 underline underline-offset-4 transition-colors hover:text-white disabled:cursor-default disabled:opacity-60"
           >
             Usar credenciales demo
           </button>
