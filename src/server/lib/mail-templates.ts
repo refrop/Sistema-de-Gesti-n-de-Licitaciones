@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { escapeHtml } from "./html";
 
 function money(value: Prisma.Decimal): string {
-  return `S/ ${value.toFixed(2)}`;
+  return `$${value.toFixed(2)}`;
 }
 
 function formatDate(date: Date): string {

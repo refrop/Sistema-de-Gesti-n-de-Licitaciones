@@ -1,6 +1,6 @@
 export const APP_TIME_ZONE = "America/Lima";
 
-const moneyFmt = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
+const moneyFmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const dateFmt = new Intl.DateTimeFormat("es-PE", {
   year: "numeric",
   month: "short",

@@ -73,7 +73,7 @@ src/
     empty-state.tsx, tender-status-badge.tsx
   lib/
     api.ts                  # fetch con CSRF (Content-Type json), ApiError, errorMessage
-    format.ts               # es-PE: dinero (PEN), fechas con timeZone America/Lima, tamaño de archivo
+    format.ts               # dinero en USD ($), fechas con timeZone America/Lima, tamaño de archivo
     money.ts                # dinero en centavos enteros (validación de presupuesto/saldo en cliente)
     forms.ts                # schemas zod del cliente (login, cliente, producto, usuario, licitación)
     session.ts              # getSessionUser() (cookie → JWT → BD)

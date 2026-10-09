@@ -117,7 +117,7 @@ export function ProductCreateDialog() {
                 aria-invalid={Boolean(errors.sku)}
               />
             </Field>
-            <Field id="product-price" label="Precio base (S/)" error={errors.basePrice}>
+            <Field id="product-price" label="Precio base ($)" error={errors.basePrice}>
               <Input
                 id="product-price"
                 type="number"

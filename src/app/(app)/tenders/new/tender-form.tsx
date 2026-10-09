@@ -95,7 +95,7 @@ export function TenderForm({ clients }: { clients: ClientOption[] }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="tender-budget">Presupuesto máximo (S/)</Label>
+          <Label htmlFor="tender-budget">Presupuesto máximo ($)</Label>
           <Input
             id="tender-budget"
             type="number"

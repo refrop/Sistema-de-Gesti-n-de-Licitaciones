@@ -18,8 +18,8 @@ describe("toCents", () => {
   });
 
   it("ignora símbolos y espacios", () => {
-    expect(toCents("S/ 1 234,50")).toBe(123450);
-    expect(toCents("PEN 99.90")).toBe(9990);
+    expect(toCents("$1 234,50")).toBe(123450);
+    expect(toCents("USD 99.90")).toBe(9990);
   });
 
   it("devuelve 0 en vacíos y nulos", () => {
