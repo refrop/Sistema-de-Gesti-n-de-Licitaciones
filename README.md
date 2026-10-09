@@ -486,6 +486,7 @@ Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler
 |---|---|
 | Cuerpo del correo de envío (plantilla actual, renderizada; el PDF se adjunta al enviar) | ✅ [`docs/evidencia-correo.png`](#correo-de-envío-con-el-pdf-adjunto-fase-5) |
 | Cuerpo del correo de recordatorio del cron (plantilla actual, renderizada, fase 7) | ✅ [`docs/evidencia-cron-correo.png`](#correo-de-recordatorio-del-cron-fase-7) |
+| **Correos reales recibidos en el inbox** (capturas del correo de envío con PDF adjunto y del recordatorio del cron, recibidos de verdad vía Resend) | ✅ [`envío`](docs/evidencia-correo-envio.png) · [`recordatorio`](docs/evidencia-correo-recordatorio.png) |
 | `EmailLog` del envío real (providerId `01a116ae-eb87-786f-bdb9-e442a34f0cba`, estado `enviado`) | ✅ verificado en producción |
 | Documento accesible por URL pública (HTTP 200, `application/pdf`) | ✅ [`Propuesta_Evidencia_Fase_5.pdf`](https://tcrjekibvnzjnbxdebto.supabase.co/storage/v1/object/public/proposals/tenders/ec4dda0d-e4d6-4883-bfbb-39fc0c813a41/1791381921609-Propuesta_Evidencia_Fase_5.pdf) |
 | Prueba E2E en producción (checklist del enunciado) | ✅ [`docs/evidencia-e2e.png`](#prueba-e2e-en-producción) |
@@ -495,7 +496,7 @@ Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler
 | Frontend fase 9 (detalle, documento + envío, ciclo, panel de vencer) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Documentación interactiva `/api/docs` + spec público `/api/openapi.json` | ✅ testeado en `docs.test.ts` y verificado en producción |
 
-> Capturas regeneradas sobre la UI cósmica actual (09/10/2026): app y GitHub Actions contra producción; los dos correos son el **render de las plantillas vigentes** (`mail-templates.ts`) con datos de ejemplo. El correo personal del cliente aparece difuminado en los detalles.
+> **Nota sobre los correos:** `evidencia-correo.png` y `evidencia-cron-correo.png` son el **render de las plantillas vigentes** (`mail-templates.ts`) con datos de ejemplo (previo al cambio a USD). Las capturas de **correo real recibido** (inbox) están en la tabla de arriba y en §12.1; el correo personal del cliente aparece difuminado en los detalles.
 
 ### Correo de envío con el PDF adjunto (fase 5)
 
@@ -508,6 +509,14 @@ Cuerpo del correo que envía la app al enviar una licitación (el PDF de la prop
 Cuerpo del recordatorio automático (ventana de 48 h) generado por la plantilla vigente.
 
 <img src="docs/evidencia-cron-correo.png" alt="Cuerpo del correo de recordatorio con la plantilla actual" width="800">
+
+### 12.1 Correos reales recibidos (inbox del destinatario)
+
+Capturas del correo **realmente recibido** en el inbox del destinatario (enviado vía Resend, remitente `onboarding@resend.dev`): el de envío con el PDF adjunto y el recordatorio automático del cron. Moneda `S/` (PEN) porque se enviaron antes del cambio a USD.
+
+<img src="docs/evidencia-correo-envio.png" alt="Correo real recibido: licitación Evidencia Fase 5 con PDF adjunto" width="800">
+
+<img src="docs/evidencia-correo-recordatorio.png" alt="Correo real recibido: recordatorio de vencimiento del cron" width="800">
 
 ### Prueba E2E en producción
 

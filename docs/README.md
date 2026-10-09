@@ -6,6 +6,8 @@ Archivos de evidencia del proyecto. Guardar cada uno en cuanto se genere (no esp
 |---|---|---|
 | `evidencia-correo.png` | Cuerpo del correo de envío (fase 5) renderizado desde la plantilla actual (`mail-templates.ts`); el PDF se adjunta al enviar | ✅ |
 | `evidencia-cron-correo.png` | Cuerpo del correo de recordatorio del cron (fase 7) renderizado desde la plantilla actual | ✅ |
+| `evidencia-correo-envio.png` | **Correo real recibido** en el inbox: envío de propuesta con PDF adjunto (Resend, remitente `onboarding@resend.dev`); moneda S/ (previa al cambio a USD); correo del cliente enmascarado | ✅ |
+| `evidencia-correo-recordatorio.png` | **Correo real recibido** en el inbox: recordatorio automático del cron (~48 h antes del deadline); moneda S/ (previa al cambio a USD); correo del cliente enmascarado | ✅ |
 | `evidencia-cron-recordatorio.png` | Sonda fase 10: detalle de la licitación con `EmailLog recordatorio → enviado` (disparado por el cron, 05:43:57 UTC); UI cósmica actual, correo del cliente difuminado | ✅ |
 | `evidencia-cron-vencimiento.png` | Sonda fase 10: detalle de la licitación que pasó sola a `perdida` (`userId` nulo, `vencimiento_automatico`, 05:43:57 UTC); UI cósmica actual, correo del cliente difuminado | ✅ |
 | `evidencia-cron-actions.png` | Workflow "Tick de licitaciones" en la pestaña Actions: 1 run manual + 5 runs `Scheduled`, todos `success` | ✅ |
