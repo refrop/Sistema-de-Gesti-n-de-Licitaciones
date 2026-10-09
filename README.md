@@ -1,5 +1,9 @@
 # Sistema de Gestión de Licitaciones
 
+<p align="center">
+  <img src="docs/login.png" alt="Pantalla de login — nebulosa cosmic" width="800">
+</p>
+
 ## 1. Encabezado y acceso rápido
 
 Gestión de licitaciones de principio a fin: creación de propuestas con productos y presupuesto, documento PDF en Supabase Storage, envío real por correo con adjunto, máquina de estados con historial y trazabilidad completa de correos. Backend y frontend desplegados en Vercel sobre Supabase: login, layout, listados/alta, **detalle de licitación** (productos, totales, documento, envío, ciclo completo, historial y correos), **panel de próximas a vencer** y **documentación de la API**.
@@ -480,34 +484,40 @@ Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler
 
 | Evidencia | Estado |
 |---|---|
-| Correo de envío con el PDF adjunto (inbox/Spam, fase 5) | ✅ [`docs/evidencia-correo.png`](#correo-de-envío-con-el-pdf-adjunto-fase-5) |
-| Correo de recordatorio del cron (inbox/Spam, fase 7) | ✅ [`docs/evidencia-cron-correo.png`](#correo-de-recordatorio-del-cron-fase-7) |
+| Cuerpo del correo de envío (plantilla actual, renderizada; el PDF se adjunta al enviar) | ✅ [`docs/evidencia-correo.png`](#correo-de-envío-con-el-pdf-adjunto-fase-5) |
+| Cuerpo del correo de recordatorio del cron (plantilla actual, renderizada, fase 7) | ✅ [`docs/evidencia-cron-correo.png`](#correo-de-recordatorio-del-cron-fase-7) |
 | `EmailLog` del envío real (providerId `01a116ae-eb87-786f-bdb9-e442a34f0cba`, estado `enviado`) | ✅ verificado en producción |
 | Documento accesible por URL pública (HTTP 200, `application/pdf`) | ✅ [`Propuesta_Evidencia_Fase_5.pdf`](https://tcrjekibvnzjnbxdebto.supabase.co/storage/v1/object/public/proposals/tenders/ec4dda0d-e4d6-4883-bfbb-39fc0c813a41/1791381921609-Propuesta_Evidencia_Fase_5.pdf) |
 | Prueba E2E en producción (checklist del enunciado) | ✅ [`docs/evidencia-e2e.png`](#prueba-e2e-en-producción) |
 | Tick automático sin intervención (recordatorio + vencimiento resueltos en el mismo tick) | ✅ 08/10/2026 **05:43:57 UTC** por Vercel Cron → [`recordatorio`](#tick-automático-recordatorio) y [`vencimiento`](#tick-automático-vencimiento) (`userId: null`, `vencimiento_automatico`) |
-| Workflow de GitHub Actions (tick bajo demanda) | ✅ [`docs/evidencia-cron-actions.png`](#workflow-de-github-actions) (run #1 manual → `success`; el `schedule` aún no dispara, ver §13) |
+| Workflow de GitHub Actions (tick bajo demanda + schedule) | ✅ [`docs/evidencia-cron-actions.png`](#workflow-de-github-actions) (1 run manual + 5 `Scheduled`, todos `success`) |
 | Frontend fase 8 (login, layout, 5 listados + alta) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Frontend fase 9 (detalle, documento + envío, ciclo, panel de vencer) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Documentación interactiva `/api/docs` + spec público `/api/openapi.json` | ✅ testeado en `docs.test.ts` y verificado en producción |
 
+> Capturas regeneradas sobre la UI cósmica actual (09/10/2026): app y GitHub Actions contra producción; los dos correos son el **render de las plantillas vigentes** (`mail-templates.ts`) con datos de ejemplo. El correo personal del cliente aparece difuminado en los detalles.
+
 ### Correo de envío con el PDF adjunto (fase 5)
 
-<img src="docs/evidencia-correo.png" alt="Correo de envío con el PDF adjunto" width="800">
+Cuerpo del correo que envía la app al enviar una licitación (el PDF de la propuesta se adjunta; la URL pública del documento está en la tabla de arriba).
+
+<img src="docs/evidencia-correo.png" alt="Cuerpo del correo de envío con la plantilla actual" width="800">
 
 ### Correo de recordatorio del cron (fase 7)
 
-<img src="docs/evidencia-cron-correo.png" alt="Correo de recordatorio del cron" width="800">
+Cuerpo del recordatorio automático (ventana de 48 h) generado por la plantilla vigente.
+
+<img src="docs/evidencia-cron-correo.png" alt="Cuerpo del correo de recordatorio con la plantilla actual" width="800">
 
 ### Prueba E2E en producción
 
-Login → panel de vencer → listado con las 5 licitaciones → `/api/docs`; 0 errores JS/5xx.
+Login → panel de vencer → listado con filtros, badges de estado y paginación; 0 errores JS/5xx.
 
 <img src="docs/evidencia-e2e.png" alt="Prueba E2E en producción" width="800">
 
 ### Tick automático: recordatorio
 
-Vercel Cron 08/10/2026 05:43:57 UTC — recordatorio enviado sin intervención manual.
+Vercel Cron 08/10/2026 05:43:57 UTC — recordatorio enviado sin intervención manual (`EmailLog recordatorio → enviado`).
 
 <img src="docs/evidencia-cron-recordatorio.png" alt="Tick automático: recordatorio" width="800">
 
@@ -519,7 +529,7 @@ Mismo tick — licitación vencida → `perdida` con `userId: null` y `vencimien
 
 ### Workflow de GitHub Actions
 
-Run #1 manual (`workflow_dispatch`) → `success`; el evento `schedule` aún no dispara (§13).
+Run #1 manual (`workflow_dispatch`) + 5 runs `Scheduled` automáticos, todos `success`.
 
 <img src="docs/evidencia-cron-actions.png" alt="Workflow de GitHub Actions" width="800">
 

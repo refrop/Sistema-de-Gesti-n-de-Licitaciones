@@ -4,12 +4,13 @@ Archivos de evidencia del proyecto. Guardar cada uno en cuanto se genere (no esp
 
 | Archivo | Descripción | Estado |
 |---|---|---|
-| `evidencia-correo.png` | Captura del correo de envío (fase 5) con el PDF adjunto (inbox o Spam) | ✅ |
-| `evidencia-cron-correo.png` | Captura de los correos de recordatorio del cron (fase 7, inbox o Spam) | ✅ |
-| `evidencia-cron-recordatorio.png` | Sonda fase 10: recordatorio disparado **solo** por el cron (05:43:57 UTC, sin llamar a `/api/cron/tick`) | ✅ |
-| `evidencia-cron-vencimiento.png` | Sonda fase 10: licitación que pasa sola a `perdida` (`userId` nulo, `vencimiento_automatico`, 05:43:57 UTC) | ✅ |
-| `evidencia-cron-actions.png` | Workflow "Tick de licitaciones" en la pestaña Actions (el `schedule` aún no dispara; ver nota abajo) | ✅ |
-| `evidencia-e2e.png` | Prueba E2E en producción: login, panel de vencer, listado con las 5 licitaciones y `/api/docs` | ✅ |
+| `evidencia-correo.png` | Cuerpo del correo de envío (fase 5) renderizado desde la plantilla actual (`mail-templates.ts`); el PDF se adjunta al enviar | ✅ |
+| `evidencia-cron-correo.png` | Cuerpo del correo de recordatorio del cron (fase 7) renderizado desde la plantilla actual | ✅ |
+| `evidencia-cron-recordatorio.png` | Sonda fase 10: detalle de la licitación con `EmailLog recordatorio → enviado` (disparado por el cron, 05:43:57 UTC); UI cósmica actual, correo del cliente difuminado | ✅ |
+| `evidencia-cron-vencimiento.png` | Sonda fase 10: detalle de la licitación que pasó sola a `perdida` (`userId` nulo, `vencimiento_automatico`, 05:43:57 UTC); UI cósmica actual, correo del cliente difuminado | ✅ |
+| `evidencia-cron-actions.png` | Workflow "Tick de licitaciones" en la pestaña Actions: 1 run manual + 5 runs `Scheduled`, todos `success` | ✅ |
+| `evidencia-e2e.png` | Prueba E2E en producción: login, panel de vencer y listado con filtros/badges (UI cósmica actual) | ✅ |
+| `login.png` | Pantalla de login (nebulosa cosmic) — cabecera del README raíz | ✅ |
 
 ## Cómo generar la evidencia del envío
 
