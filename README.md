@@ -480,16 +480,48 @@ Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler
 
 | Evidencia | Estado |
 |---|---|
-| Correo de envío con el PDF adjunto (inbox/Spam, fase 5) | ✅ `docs/evidencia-correo.png` |
-| Correo de recordatorio del cron (inbox/Spam, fase 7) | ✅ `docs/evidencia-cron-correo.png` |
+| Correo de envío con el PDF adjunto (inbox/Spam, fase 5) | ✅ [`docs/evidencia-correo.png`](#correo-de-envío-con-el-pdf-adjunto-fase-5) |
+| Correo de recordatorio del cron (inbox/Spam, fase 7) | ✅ [`docs/evidencia-cron-correo.png`](#correo-de-recordatorio-del-cron-fase-7) |
 | `EmailLog` del envío real (providerId `01a116ae-eb87-786f-bdb9-e442a34f0cba`, estado `enviado`) | ✅ verificado en producción |
 | Documento accesible por URL pública (HTTP 200, `application/pdf`) | ✅ [`Propuesta_Evidencia_Fase_5.pdf`](https://tcrjekibvnzjnbxdebto.supabase.co/storage/v1/object/public/proposals/tenders/ec4dda0d-e4d6-4883-bfbb-39fc0c813a41/1791381921609-Propuesta_Evidencia_Fase_5.pdf) |
-| Prueba E2E en producción (checklist del enunciado) | ✅ `docs/evidencia-e2e.png` (login → panel de vencer → listado con las 5 licitaciones → `/api/docs`; 0 errores JS/5xx) |
-| Tick automático sin intervención (recordatorio + vencimiento resueltos en el mismo tick) | ✅ 08/10/2026 **05:43:57 UTC** por Vercel Cron → `docs/evidencia-cron-recordatorio.png` y `docs/evidencia-cron-vencimiento.png` (`userId: null`, `vencimiento_automatico`) |
-| Workflow de GitHub Actions (tick bajo demanda) | ✅ `docs/evidencia-cron-actions.png` (run #1 manual → `success`; el `schedule` aún no dispara, ver §13) |
+| Prueba E2E en producción (checklist del enunciado) | ✅ [`docs/evidencia-e2e.png`](#prueba-e2e-en-producción) |
+| Tick automático sin intervención (recordatorio + vencimiento resueltos en el mismo tick) | ✅ 08/10/2026 **05:43:57 UTC** por Vercel Cron → [`recordatorio`](#tick-automático-recordatorio) y [`vencimiento`](#tick-automático-vencimiento) (`userId: null`, `vencimiento_automatico`) |
+| Workflow de GitHub Actions (tick bajo demanda) | ✅ [`docs/evidencia-cron-actions.png`](#workflow-de-github-actions) (run #1 manual → `success`; el `schedule` aún no dispara, ver §13) |
 | Frontend fase 8 (login, layout, 5 listados + alta) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Frontend fase 9 (detalle, documento + envío, ciclo, panel de vencer) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Documentación interactiva `/api/docs` + spec público `/api/openapi.json` | ✅ testeado en `docs.test.ts` y verificado en producción |
+
+### Correo de envío con el PDF adjunto (fase 5)
+
+<img src="docs/evidencia-correo.png" alt="Correo de envío con el PDF adjunto" width="800">
+
+### Correo de recordatorio del cron (fase 7)
+
+<img src="docs/evidencia-cron-correo.png" alt="Correo de recordatorio del cron" width="800">
+
+### Prueba E2E en producción
+
+Login → panel de vencer → listado con las 5 licitaciones → `/api/docs`; 0 errores JS/5xx.
+
+<img src="docs/evidencia-e2e.png" alt="Prueba E2E en producción" width="800">
+
+### Tick automático: recordatorio
+
+Vercel Cron 08/10/2026 05:43:57 UTC — recordatorio enviado sin intervención manual.
+
+<img src="docs/evidencia-cron-recordatorio.png" alt="Tick automático: recordatorio" width="800">
+
+### Tick automático: vencimiento
+
+Mismo tick — licitación vencida → `perdida` con `userId: null` y `vencimiento_automatico`.
+
+<img src="docs/evidencia-cron-vencimiento.png" alt="Tick automático: vencimiento" width="800">
+
+### Workflow de GitHub Actions
+
+Run #1 manual (`workflow_dispatch`) → `success`; el evento `schedule` aún no dispara (§13).
+
+<img src="docs/evidencia-cron-actions.png" alt="Workflow de GitHub Actions" width="800">
 
 ## 13. Limitaciones conocidas y pendientes
 
