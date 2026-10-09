@@ -334,7 +334,7 @@ body::before {
   [data-slot="select-item"]:focus::before,
   [data-slot="select-item"][data-highlighted]::before {
     opacity: 1;
-    transform: translate(-4px, -4px);
+    transform: translate(-2px, -2px);
   }
 }
 
@@ -353,19 +353,19 @@ body::before {
     transform: translateX(0) rotate(0deg);
   }
   15% {
-    transform: translateX(-3px) rotate(-0.5deg);
+    transform: translateX(-1.5px) rotate(-0.15deg);
   }
   30% {
-    transform: translateX(3px) rotate(0.5deg);
+    transform: translateX(1.5px) rotate(0.15deg);
   }
   45% {
-    transform: translateX(-2.5px) rotate(-0.35deg);
+    transform: translateX(-1.2px) rotate(-0.1deg);
   }
   60% {
-    transform: translateX(2px) rotate(0.3deg);
+    transform: translateX(1px) rotate(0.1deg);
   }
   80% {
-    transform: translateX(-1px) rotate(-0.15deg);
+    transform: translateX(-0.5px) rotate(0deg);
   }
 }
 
