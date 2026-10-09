@@ -359,6 +359,41 @@ body::before {
 }
 
 /* ==========================================================================
+   Nav — caja tweening de pestañas + iconos flotantes al hover
+   El indicador (.nav-tab-indicator) lo posiciona Nav con transform y mide
+   el enlace activo; el float solo existe con movimiento reducido desactivado.
+   ========================================================================== */
+@keyframes vv-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.nav-tab-indicator {
+  transition:
+    transform 0.45s var(--vv-ease),
+    width 0.45s var(--vv-ease),
+    height 0.45s var(--vv-ease);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nav-tab:hover .nav-tab-icon,
+  .nav-tab:focus-visible .nav-tab-icon {
+    animation: vv-float 1.7s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-tab-indicator {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
    vv-buttons — borde luminoso giratorio + shimmer de estrellas
    Presupuesto HCI: un efecto protagonista por pantalla (1 shine por página;
    1 shimmer en toda la app). Capas inyectadas por public/vv-buttons.js.
