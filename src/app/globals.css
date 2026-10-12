@@ -4,6 +4,82 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   Tokens de color registrados (@property, syntax <color>)
+   Al estar registrados, la transición en :root interpola su valor y TODA
+   propiedad que use var(--…) (colores, gradientes, glows, scrollbars…)
+   se repinta fotograma a fotograma → crossfade suave entre temas.
+   ========================================================================== */
+@property --nebula-violet { syntax: "<color>"; inherits: true; initial-value: #b76dff; }
+@property --nebula-lavender { syntax: "<color>"; inherits: true; initial-value: #ddb7ff; }
+@property --nebula-magenta { syntax: "<color>"; inherits: true; initial-value: #fbabff; }
+@property --nebula-cyan { syntax: "<color>"; inherits: true; initial-value: #7bd0ff; }
+@property --nebula-blue { syntax: "<color>"; inherits: true; initial-value: #00a6e0; }
+@property --nebula-deep { syntax: "<color>"; inherits: true; initial-value: #842bd2; }
+@property --background { syntax: "<color>"; inherits: true; initial-value: #060713; }
+@property --foreground { syntax: "<color>"; inherits: true; initial-value: #e2e1f3; }
+@property --card { syntax: "<color>"; inherits: true; initial-value: #12132d; }
+@property --card-foreground { syntax: "<color>"; inherits: true; initial-value: #e2e1f3; }
+@property --popover { syntax: "<color>"; inherits: true; initial-value: #161836; }
+@property --popover-foreground { syntax: "<color>"; inherits: true; initial-value: #e2e1f3; }
+@property --primary { syntax: "<color>"; inherits: true; initial-value: #b76dff; }
+@property --primary-foreground { syntax: "<color>"; inherits: true; initial-value: #ffffff; }
+@property --secondary { syntax: "<color>"; inherits: true; initial-value: #161836; }
+@property --secondary-foreground { syntax: "<color>"; inherits: true; initial-value: #cfc2d6; }
+@property --muted { syntax: "<color>"; inherits: true; initial-value: #161836; }
+@property --muted-foreground { syntax: "<color>"; inherits: true; initial-value: #988d9f; }
+@property --accent { syntax: "<color>"; inherits: true; initial-value: #161836; }
+@property --accent-foreground { syntax: "<color>"; inherits: true; initial-value: #ffffff; }
+@property --destructive { syntax: "<color>"; inherits: true; initial-value: #ffb4ab; }
+@property --destructive-foreground { syntax: "<color>"; inherits: true; initial-value: #3d0a08; }
+@property --border { syntax: "<color>"; inherits: true; initial-value: #1f2042; }
+@property --input { syntax: "<color>"; inherits: true; initial-value: #1f2042; }
+@property --ring { syntax: "<color>"; inherits: true; initial-value: #b76dff; }
+@property --chart-1 { syntax: "<color>"; inherits: true; initial-value: #b76dff; }
+@property --chart-2 { syntax: "<color>"; inherits: true; initial-value: #ddb7ff; }
+@property --chart-3 { syntax: "<color>"; inherits: true; initial-value: #7bd0ff; }
+@property --chart-4 { syntax: "<color>"; inherits: true; initial-value: #00a6e0; }
+@property --chart-5 { syntax: "<color>"; inherits: true; initial-value: #fbabff; }
+@property --sidebar { syntax: "<color>"; inherits: true; initial-value: #090a18; }
+@property --sidebar-foreground { syntax: "<color>"; inherits: true; initial-value: #e2e1f3; }
+@property --sidebar-primary { syntax: "<color>"; inherits: true; initial-value: #b76dff; }
+@property --sidebar-primary-foreground { syntax: "<color>"; inherits: true; initial-value: #ffffff; }
+@property --sidebar-accent { syntax: "<color>"; inherits: true; initial-value: #161836; }
+@property --sidebar-accent-foreground { syntax: "<color>"; inherits: true; initial-value: #ffffff; }
+@property --sidebar-border { syntax: "<color>"; inherits: true; initial-value: #1f2042; }
+@property --sidebar-ring { syntax: "<color>"; inherits: true; initial-value: #b76dff; }
+@property --glow-1 { syntax: "<color>"; inherits: true; initial-value: rgb(139 92 246 / 0.14); }
+@property --glow-2 { syntax: "<color>"; inherits: true; initial-value: rgb(217 70 239 / 0.1); }
+@property --glow-3 { syntax: "<color>"; inherits: true; initial-value: rgb(56 189 248 / 0.1); }
+@property --glow-4 { syntax: "<color>"; inherits: true; initial-value: rgb(132 43 210 / 0.12); }
+@property --grid-dot { syntax: "<color>"; inherits: true; initial-value: rgb(168 85 247 / 0.08); }
+@property --grad-text-a { syntax: "<color>"; inherits: true; initial-value: #fbabff; }
+@property --grad-text-b { syntax: "<color>"; inherits: true; initial-value: #ddb7ff; }
+@property --grad-text-c { syntax: "<color>"; inherits: true; initial-value: #7bd0ff; }
+@property --grad-btn-a { syntax: "<color>"; inherits: true; initial-value: #b76dff; }
+@property --grad-btn-b { syntax: "<color>"; inherits: true; initial-value: #842bd2; }
+@property --grad-btn-c { syntax: "<color>"; inherits: true; initial-value: #00a6e0; }
+@property --glow-btn { syntax: "<color>"; inherits: true; initial-value: #b76dff; }
+@property --glow-btn-2 { syntax: "<color>"; inherits: true; initial-value: #7bd0ff; }
+@property --btn-focus-halo { syntax: "<color>"; inherits: true; initial-value: rgb(6 7 19 / 0.6); }
+@property --glow-accent { syntax: "<color>"; inherits: true; initial-value: rgb(183 109 255 / 0.55); }
+@property --selection-bg { syntax: "<color>"; inherits: true; initial-value: rgb(183 109 255 / 0.3); }
+@property --selection-fg { syntax: "<color>"; inherits: true; initial-value: #ffffff; }
+@property --scroll-track { syntax: "<color>"; inherits: true; initial-value: rgb(6 7 19 / 0.5); }
+@property --scroll-thumb-a { syntax: "<color>"; inherits: true; initial-value: rgb(183 109 255 / 0.6); }
+@property --scroll-thumb-b { syntax: "<color>"; inherits: true; initial-value: rgb(123 208 255 / 0.5); }
+@property --scroll-thumb-a-hover { syntax: "<color>"; inherits: true; initial-value: rgb(183 109 255 / 0.9); }
+@property --scroll-thumb-b-hover { syntax: "<color>"; inherits: true; initial-value: rgb(123 208 255 / 0.75); }
+@property --scroll-ff-thumb { syntax: "<color>"; inherits: true; initial-value: rgb(183 109 255 / 0.55); }
+@property --scroll-ff-track { syntax: "<color>"; inherits: true; initial-value: rgb(6 7 19 / 0.5); }
+@property --login-bg { syntax: "<color>"; inherits: true; initial-value: #060713; }
+@property --login-glow-1 { syntax: "<color>"; inherits: true; initial-value: rgb(0 166 224 / 0.26); }
+@property --login-glow-2 { syntax: "<color>"; inherits: true; initial-value: rgb(132 43 210 / 0.3); }
+@property --login-glow-3 { syntax: "<color>"; inherits: true; initial-value: rgb(139 92 246 / 0.35); }
+@property --shadow-card { syntax: "<color>"; inherits: true; initial-value: rgb(0 0 0 / 0.5); }
+@property --vv-shine-c1 { syntax: "<color>"; inherits: true; initial-value: #ffffff; }
+@property --vv-shine-c2 { syntax: "<color>"; inherits: true; initial-value: #7bd0ff; }
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -55,8 +131,18 @@
 }
 
 :root {
+  color-scheme: dark;
   --font-sans: var(--font-geist-sans);
-  /* Paleta cosmic/nebula */
+
+  /* Efectos vv-buttons */
+  --vv-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --vv-shine-border: 1px;
+  --vv-shine-duration: 2.8s;
+  --vv-beam: 24deg;
+  --vv-stars-speed: 1;
+  --vv-stars-density: 1;
+
+  /* Paleta cosmic/nebula (tema oscuro por defecto) */
   --nebula-violet: #b76dff;
   --nebula-lavender: #ddb7ff;
   --nebula-magenta: #fbabff;
@@ -97,7 +183,204 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1f2042;
   --sidebar-ring: #b76dff;
+
+  /* Efectos: glows, gradientes, scrollbars, login */
+  --glow-1: rgb(139 92 246 / 0.14);
+  --glow-2: rgb(217 70 239 / 0.1);
+  --glow-3: rgb(56 189 248 / 0.1);
+  --glow-4: rgb(132 43 210 / 0.12);
+  --grid-dot: rgb(168 85 247 / 0.08);
+  --grad-text-a: #fbabff;
+  --grad-text-b: #ddb7ff;
+  --grad-text-c: #7bd0ff;
+  --grad-btn-a: #b76dff;
+  --grad-btn-b: #842bd2;
+  --grad-btn-c: #00a6e0;
+  --glow-btn: #b76dff;
+  --glow-btn-2: #7bd0ff;
+  --btn-focus-halo: rgb(6 7 19 / 0.6);
+  --glow-accent: rgb(183 109 255 / 0.55);
+  --selection-bg: rgb(183 109 255 / 0.3);
+  --selection-fg: #ffffff;
+  --scroll-track: rgb(6 7 19 / 0.5);
+  --scroll-thumb-a: rgb(183 109 255 / 0.6);
+  --scroll-thumb-b: rgb(123 208 255 / 0.5);
+  --scroll-thumb-a-hover: rgb(183 109 255 / 0.9);
+  --scroll-thumb-b-hover: rgb(123 208 255 / 0.75);
+  --scroll-ff-thumb: rgb(183 109 255 / 0.55);
+  --scroll-ff-track: rgb(6 7 19 / 0.5);
+  --login-bg: #060713;
+  --login-glow-1: rgb(0 166 224 / 0.26);
+  --login-glow-2: rgb(132 43 210 / 0.3);
+  --login-glow-3: rgb(139 92 246 / 0.35);
+  --shadow-card: rgb(0 0 0 / 0.5);
+  --vv-shine-c1: #ffffff;
+  --vv-shine-c2: #7bd0ff;
+
+  /* Interpolación de colores entre temas: los @property registrados se
+     animan en <html> y todo lo que usa var(--…) se repinta por fotograma. */
+  transition:
+    --nebula-violet 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --nebula-lavender 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --nebula-magenta 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --nebula-cyan 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --nebula-blue 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --nebula-deep 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --background 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --card 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --card-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --popover 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --popover-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --primary 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --primary-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --secondary 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --secondary-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --muted 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --muted-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --accent 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --accent-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --destructive 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --destructive-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --border 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --input 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --ring 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --chart-1 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --chart-2 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --chart-3 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --chart-4 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --chart-5 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --sidebar 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --sidebar-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --sidebar-primary 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --sidebar-primary-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --sidebar-accent 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --sidebar-accent-foreground 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --sidebar-border 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --sidebar-ring 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --glow-1 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --glow-2 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --glow-3 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --glow-4 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --grid-dot 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --grad-text-a 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --grad-text-b 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --grad-text-c 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --grad-btn-a 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --grad-btn-b 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --grad-btn-c 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --glow-btn 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --glow-btn-2 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --btn-focus-halo 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --glow-accent 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --selection-bg 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --selection-fg 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --scroll-track 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --scroll-thumb-a 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --scroll-thumb-b 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --scroll-thumb-a-hover 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --scroll-thumb-b-hover 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --scroll-ff-thumb 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --scroll-ff-track 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --login-bg 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --login-glow-1 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --login-glow-2 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --login-glow-3 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --shadow-card 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --vv-shine-c1 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    --vv-shine-c2 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* White mode: blanco cálido + oro. Mismas claves para que la transición
+   en :root interpola cada token de forma suave. */
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Oro / champán / bronce */
+  --nebula-violet: #b8860b;
+  --nebula-lavender: #a9812a;
+  --nebula-magenta: #d4af37;
+  --nebula-cyan: #8a6a12;
+  --nebula-blue: #6f5410;
+  --nebula-deep: #8c6d16;
+
+  --background: #faf8f2;
+  --foreground: #211c10;
+  --card: #ffffff;
+  --card-foreground: #211c10;
+  --popover: #ffffff;
+  --popover-foreground: #211c10;
+  --primary: #c9a227;
+  --primary-foreground: #241c04;
+  --secondary: #f1ecdd;
+  --secondary-foreground: #4a432c;
+  --muted: #f0ebdc;
+  --muted-foreground: #7d7460;
+  --accent: #efe8d5;
+  --accent-foreground: #241c04;
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --border: #e6ddc6;
+  --input: #e6ddc6;
+  --ring: #b8860b;
+  --chart-1: #c9a227;
+  --chart-2: #a9812a;
+  --chart-3: #e0c268;
+  --chart-4: #8c6d16;
+  --chart-5: #d4af37;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #211c10;
+  --sidebar-primary: #b8860b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1ecdd;
+  --sidebar-accent-foreground: #241c04;
+  --sidebar-border: #e6ddc6;
+  --sidebar-ring: #b8860b;
+
+  --glow-1: rgb(212 175 55 / 0.18);
+  --glow-2: rgb(184 134 11 / 0.14);
+  --glow-3: rgb(230 200 102 / 0.2);
+  --glow-4: rgb(154 123 28 / 0.12);
+  --grid-dot: rgb(184 134 11 / 0.1);
+  --grad-text-a: #d9b44a;
+  --grad-text-b: #c9a227;
+  --grad-text-c: #8a6a12;
+  --grad-btn-a: #e2b64e;
+  --grad-btn-b: #c9a227;
+  --grad-btn-c: #96751a;
+  --glow-btn: #d9b44a;
+  --glow-btn-2: #8a6a12;
+  --btn-focus-halo: rgb(34 29 14 / 0.5);
+  --glow-accent: rgb(184 134 11 / 0.5);
+  --selection-bg: rgb(201 162 39 / 0.35);
+  --selection-fg: #211c10;
+  --scroll-track: rgb(230 221 198 / 0.6);
+  --scroll-thumb-a: rgb(184 134 11 / 0.6);
+  --scroll-thumb-b: rgb(217 180 74 / 0.6);
+  --scroll-thumb-a-hover: rgb(154 123 11 / 0.85);
+  --scroll-thumb-b-hover: rgb(201 162 39 / 0.85);
+  --scroll-ff-thumb: rgb(184 134 11 / 0.55);
+  --scroll-ff-track: rgb(230 221 198 / 0.7);
+  --login-bg: #faf8f2;
+  --login-glow-1: rgb(230 200 102 / 0.34);
+  --login-glow-2: rgb(154 123 28 / 0.24);
+  --login-glow-3: rgb(201 162 39 / 0.36);
+  --shadow-card: rgb(122 92 25 / 0.25);
+  --vv-shine-c1: #ffd76a;
+  --vv-shine-c2: #8a6a12;
+}
+
+/* Boot: evita la animación de 0.65s al cargar con light guardado */
+html.theme-boot {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    transition-duration: 0.01ms !important;
+  }
+}
+
 
 /* Glows ambientales fijos (ultravioleta, magenta y starlight) */
 body::before {
@@ -107,21 +390,21 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(600px 600px at 6% 2%, rgb(139 92 246 / 0.14), transparent 65%),
-    radial-gradient(560px 560px at 97% 28%, rgb(217 70 239 / 0.1), transparent 65%),
-    radial-gradient(650px 650px at 80% 98%, rgb(56 189 248 / 0.1), transparent 65%),
-    radial-gradient(500px 500px at 28% 94%, rgb(132 43 210 / 0.12), transparent 65%);
+    radial-gradient(600px 600px at 6% 2%, var(--glow-1), transparent 65%),
+    radial-gradient(560px 560px at 97% 28%, var(--glow-2), transparent 65%),
+    radial-gradient(650px 650px at 80% 98%, var(--glow-3), transparent 65%),
+    radial-gradient(500px 500px at 28% 94%, var(--glow-4), transparent 65%);
 }
 
 /* Rejilla cósmica de fondo (puntos violeta) */
 .cosmic-grid {
-  background-image: radial-gradient(circle, rgb(168 85 247 / 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--grid-dot) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
 /* Título con degradado firma de nebulosa */
 .text-nebula-gradient {
-  background: linear-gradient(135deg, #fbabff 0%, #ddb7ff 40%, #7bd0ff 100%);
+  background: linear-gradient(135deg, var(--grad-text-a) 0%, var(--grad-text-b) 40%, var(--grad-text-c) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -129,31 +412,31 @@ body::before {
 
 /* Botón primario con degradado nebulosa + glow */
 .btn-nebula-gradient {
-  background: linear-gradient(135deg, #b76dff 0%, #842bd2 50%, #00a6e0 100%);
+  background: linear-gradient(135deg, var(--grad-btn-a) 0%, var(--grad-btn-b) 50%, var(--grad-btn-c) 100%);
   box-shadow:
-    0 4px 20px rgb(183 109 255 / 0.35),
-    0 0 12px rgb(123 208 255 / 0.2);
+    0 4px 20px color-mix(in srgb, var(--glow-btn) 35%, transparent),
+    0 0 12px color-mix(in srgb, var(--glow-btn-2) 20%, transparent);
 }
 .btn-nebula-gradient:hover {
   box-shadow:
-    0 6px 26px rgb(183 109 255 / 0.5),
-    0 0 18px rgb(123 208 255 / 0.35);
+    0 6px 26px color-mix(in srgb, var(--glow-btn) 50%, transparent),
+    0 0 18px color-mix(in srgb, var(--glow-btn-2) 35%, transparent);
   transform: translateY(-1px);
 }
 .btn-nebula-gradient:focus-visible {
   box-shadow:
-    0 0 0 3px rgb(6 7 19 / 0.6),
-    0 0 0 6px rgb(183 109 255 / 0.55);
+    0 0 0 3px var(--btn-focus-halo),
+    0 0 0 6px color-mix(in srgb, var(--glow-btn) 55%, transparent);
 }
 
 ::selection {
-  background: rgb(183 109 255 / 0.3);
-  color: #ffffff;
+  background: var(--selection-bg);
+  color: var(--selection-fg);
 }
 
 /* Scrollbars con estética nebulosa (Firefox/Chrome moderno + WebKit) */
 * {
-  scrollbar-color: rgb(183 109 255 / 0.55) rgb(6 7 19 / 0.5);
+  scrollbar-color: var(--scroll-ff-thumb) var(--scroll-ff-track);
   scrollbar-width: thin;
 }
 ::-webkit-scrollbar {
@@ -161,17 +444,17 @@ body::before {
   height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: rgb(6 7 19 / 0.5);
+  background: var(--scroll-track);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgb(183 109 255 / 0.6), rgb(123 208 255 / 0.5));
+  background: linear-gradient(180deg, var(--scroll-thumb-a), var(--scroll-thumb-b));
   background-clip: padding-box;
   border: 2px solid transparent;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgb(183 109 255 / 0.9), rgb(123 208 255 / 0.75));
+  background: linear-gradient(180deg, var(--scroll-thumb-a-hover), var(--scroll-thumb-b-hover));
   background-clip: padding-box;
   border: 2px solid transparent;
 }
@@ -404,11 +687,29 @@ body::before {
 }
 
 .login-fallback {
-  background-color: #060713;
+  background-color: var(--login-bg);
   background-image:
-    radial-gradient(1100px 750px at 72% 18%, rgb(0 166 224 / 0.26), transparent 62%),
-    radial-gradient(950px 720px at 18% 82%, rgb(132 43 210 / 0.3), transparent 66%),
-    radial-gradient(700px 520px at 50% 46%, rgb(139 92 246 / 0.35), transparent 72%);
+    radial-gradient(1100px 750px at 72% 18%, var(--login-glow-1), transparent 62%),
+    radial-gradient(950px 720px at 18% 82%, var(--login-glow-2), transparent 66%),
+    radial-gradient(700px 520px at 50% 46%, var(--login-glow-3), transparent 72%);
+}
+
+/* Entrada suave del contenido tras el skeleton de navegación (template) */
+@keyframes vv-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vv-page-enter {
+    animation: vv-page-in 0.35s var(--vv-ease) both;
+  }
 }
 
 @layer base {
@@ -497,17 +798,6 @@ body::before {
   syntax: "<number>";
   inherits: false;
   initial-value: 0;
-}
-
-:root {
-  --vv-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
-  --vv-shine-c1: #ffffff;
-  --vv-shine-c2: #7bd0ff;
-  --vv-shine-border: 1px;
-  --vv-shine-duration: 2.8s;
-  --vv-beam: 24deg;
-  --vv-stars-speed: 1;
-  --vv-stars-density: 1;
 }
 
 .vv-shine-btn,
@@ -666,6 +956,52 @@ body::before {
   --vv-ring-peak: 38%;
   --vv-ring-soft: 0.55;
   --vv-ring-full: 1;
+}
+
+/* Modo claro: campo de estrellas doradas más denso en el hover */
+[data-theme="light"] .vv-shimmer-btn {
+  --vv-stars-density: 1.6;
+}
+
+/* --- 3) Halo ovalado del recuadro (.vv-oval-glow) ---------------------------
+   En hover, resplandor elíptico detrás del contenido: centro brillante
+   tirando a dorado (light) / núcleo índigo sutil (dark). Mismo easing
+   0.65s del cambio de tema para que todo quede on sync. */
+.vv-oval-glow {
+  --vv-oval-a: rgb(100 120 235 / 0.13);
+  --vv-oval-b: rgb(96 55 190 / 0.1);
+}
+[data-theme="light"] .vv-oval-glow {
+  --vv-oval-a: rgb(255 255 255 / 0.92);
+  --vv-oval-b: rgb(212 175 55 / 0.34);
+}
+.vv-oval-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  /* El halo cubre hasta los bordes: el último stop deja un lavado
+     dorado suave en lugar de apagarse en transparente */
+  background: radial-gradient(
+    ellipse 98% 94% at 50% 42%,
+    var(--vv-oval-a) 0%,
+    color-mix(in srgb, var(--vv-oval-a) 50%, var(--vv-oval-b)) 46%,
+    var(--vv-oval-b) 74%,
+    color-mix(in srgb, var(--vv-oval-b) 45%, transparent) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.vv-oval-glow:hover::before,
+.vv-oval-glow:focus-within::before {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vv-oval-glow::before {
+    transition: none;
+  }
 }
 
 .vv-shimmer {

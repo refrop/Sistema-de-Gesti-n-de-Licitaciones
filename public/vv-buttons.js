@@ -8,10 +8,43 @@
 (() => {
   "use strict";
 
-  /* Paletas [r,g,b] por tema. Los duplicados dan más peso a ese color. */
+  /* Sincronía con el cambio de tema: misma duración/easing que los tokens CSS
+     (0.65s cubic-bezier(0.4, 0, 0.2, 1) en :root). */
+  const THEME_MS = 650;
+  const easeTheme = (() => {
+    const x1 = 0.4, y1 = 0, x2 = 0.2, y2 = 1;
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = (t) => ((ax * t + bx) * t + cx) * t;
+    const sy = (t) => ((ay * t + by) * t + cy) * t;
+    const dx = (t) => (3 * ax * t + 2 * bx) * t + cx;
+    return (x) => {
+      let t = x;
+      for (let i = 0; i < 8; i++) {
+        const e = sx(t) - x;
+        if (Math.abs(e) < 1e-5) break;
+        const d = dx(t);
+        if (Math.abs(d) < 1e-7) break;
+        t -= e / d;
+      }
+      return sy(Math.min(Math.max(t, 0), 1));
+    };
+  })();
+
+  /* Paletas [r,g,b] por tema. Los duplicados dan más peso a ese color.
+     Light: familia completa de dorados (champán muy claro → oro profundo)
+     para que el campo de estrellas tenga variedad tonal. */
   const PALETTE = {
     dark:  ["255,255,255", "255,255,255", "255,255,255", "190,220,255", "0,153,255", "255,232,190"],
-    light: ["0,153,255", "0,153,255", "0,70,140", "30,30,30", "120,90,200"],
+    light: [
+      "255,220,120", // dorado brillante (fugaces)
+      "255,240,200", // dorado muy claro / champán
+      "240,205,110", // dorado claro
+      "212,175,55",  // dorado normal
+      "212,175,55",
+      "230,190,80",  // dorado cálido
+      "184,134,11",  // oro profundo (contraste)
+    ],
   };
 
   const root = document.documentElement;
@@ -19,6 +52,14 @@
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const TAU = Math.PI * 2;
   const rand = (a, b) => a + Math.random() * (b - a);
+
+  const mixRgb = (a, b, t) => {
+    if (t <= 0 || a === b) return a;
+    if (t >= 1) return b;
+    const A = a.split(",").map(Number);
+    const B = b.split(",").map(Number);
+    return `${Math.round(A[0] + (B[0] - A[0]) * t)},${Math.round(A[1] + (B[1] - A[1]) * t)},${Math.round(A[2] + (B[2] - A[2]) * t)}`;
+  };
 
   /* ---------- 1) Borde luminoso ---------- */
   function initShine(btn) {
@@ -42,7 +83,13 @@
   function paletteFor(btn) {
     // data-shimmer-colors="196,181,253;255,255,255"  → paleta propia
     const custom = btn.dataset.shimmerColors;
-    return custom ? custom.split(";").map(s => s.trim()).filter(Boolean) : PALETTE[theme()];
+    return custom ? custom.split(";").map(s => s.trim()).filter(Boolean) : PALETTE[theme()].slice();
+  }
+
+  /* Colores efectivos interpolando pal0 → pal1 con el easing del tema */
+  function palNow(st) {
+    const t = easeTheme(st.palT);
+    return st.pal0.map((c, i) => mixRgb(c, st.pal1[i % st.pal1.length], t));
   }
 
   /* Genera el campo de estrellas para el tamaño actual del botón */
@@ -63,47 +110,84 @@
 
     st.stars = Array.from({ length: count }, () => {
       const depth = Math.random();                 // 0 lejana … 1 cercana
-      const glint = Math.random() < 0.1;           // estrella con destello en cruz
+      const glint = Math.random() < 0.12;          // estrella con destello en cruz
       return {
         x: Math.random() * w,
         y: Math.random() * h,
         depth,
         glint,
+        halo: Math.random() < 0.18,                // resplandor suave alrededor
         r: glint ? rand(0.9, 1.5) : 0.3 + depth * rand(0.2, 0.95),
         a: rand(0.4, 1),                           // brillo máximo
         sp: rand(0.8, 3),                          // velocidad de parpadeo
         ph: Math.random() * TAU,                   // fase
-        c: colors[Math.floor(Math.random() * colors.length)],
+        ci: Math.floor(Math.random() * colors.length),
       };
     });
     st.shoot = null;
     st.nextShoot = 0.8 + Math.random() * 1.6;
-    st.color0 = colors[0];
+    st.pal0 = colors.slice();
+    st.pal1 = colors.slice();
+    st.palT = 1;
     return true;
+  }
+
+  /* Transición de colores al cambiar de tema (misma duración/easing que CSS) */
+  function startPalTrans(btn, st) {
+    st.pal0 = palNow(st);
+    st.pal1 = paletteFor(btn);
+    st.palT = 0;
+    cancelAnimationFrame(st.transRaf || 0);
+    if (reduced.matches) {
+      st.palT = 1;
+      st.pal0 = st.pal1.slice();
+      if (!st.raf) draw(btn, st, st.elapsed || 0.001);
+      return;
+    }
+    const t0 = performance.now();
+    const step = (now) => {
+      st.palT = Math.min(1, (now - t0) / THEME_MS);
+      if (!st.raf) draw(btn, st, st.elapsed || 0.001);
+      if (st.palT < 1) st.transRaf = requestAnimationFrame(step);
+    };
+    st.transRaf = requestAnimationFrame(step);
   }
 
   function draw(btn, st, t) {
     const { ctx, w, h } = st;
     const speed = cssNum(btn, "--vv-stars-speed", 1);
+    const light = theme() === "light";
+    const aBoost = light ? 1.6 : 1; // más punch de las estrellas doradas en claro
+    const rBoost = light ? 1.25 : 1;
+    const cols = palNow(st);
     ctx.clearRect(0, 0, w, h);
 
     const span = w + 8;
     for (const s of st.stars) {
       // parpadeo suave: nunca se apaga del todo
       const tw = 0.5 + 0.5 * Math.sin(t * s.sp * speed + s.ph);
-      const alpha = s.a * (0.2 + 0.8 * tw);
+      const alpha = Math.min(1, s.a * (0.28 + 0.72 * tw) * aBoost);
       // deriva hacia la izquierda; las cercanas se mueven más (paralaje)
       const x = ((((s.x - t * 5 * speed * (0.2 + s.depth)) % span) + span) % span) - 4;
+      const c = cols[s.ci % cols.length];
 
-      ctx.fillStyle = `rgba(${s.c},${alpha})`;
+      ctx.fillStyle = `rgba(${c},${alpha})`;
       ctx.beginPath();
-      ctx.arc(x, s.y, s.r, 0, TAU);
+      ctx.arc(x, s.y, s.r * rBoost, 0, TAU);
       ctx.fill();
 
+      // resplandor suave (sólo claro: en oscuro ya destaca por contraste)
+      if (s.halo && light) {
+        ctx.fillStyle = `rgba(${c},${alpha * 0.16})`;
+        ctx.beginPath();
+        ctx.arc(x, s.y, s.r * rBoost * 2.6, 0, TAU);
+        ctx.fill();
+      }
+
       if (s.glint) {
-        const len = s.r * (3 + 4 * tw);
-        ctx.strokeStyle = `rgba(${s.c},${alpha * 0.75})`;
-        ctx.lineWidth = 0.6;
+        const len = s.r * rBoost * (3 + 4 * tw);
+        ctx.strokeStyle = `rgba(${c},${alpha * 0.75})`;
+        ctx.lineWidth = light ? 1.1 : 0.6;
         ctx.beginPath();
         ctx.moveTo(x - len, s.y); ctx.lineTo(x + len, s.y);
         ctx.moveTo(x, s.y - len); ctx.lineTo(x, s.y + len);
@@ -126,14 +210,15 @@
         st.shoot = null;
         st.nextShoot = t + rand(2.2, 5);
       } else {
+        const c0 = cols[0];
         const hx = k.x + k.vx * age, hy = k.y + k.vy * age;
         const tail = 26;
         const m = Math.hypot(k.vx, k.vy);
         const tx = hx - (k.vx / m) * tail, ty = hy - (k.vy / m) * tail;
         const fade = Math.sin(p * Math.PI);
         const g = ctx.createLinearGradient(tx, ty, hx, hy);
-        g.addColorStop(0, `rgba(${st.color0},0)`);
-        g.addColorStop(1, `rgba(${st.color0},${0.9 * fade})`);
+        g.addColorStop(0, `rgba(${c0},0)`);
+        g.addColorStop(1, `rgba(${c0},${0.9 * fade})`);
         ctx.strokeStyle = g;
         ctx.lineWidth = 1.1;
         ctx.lineCap = "round";
@@ -184,8 +269,9 @@
 
     const st = {
       canvas, ctx: canvas.getContext("2d"),
-      stars: [], w: 0, h: 0, raf: 0, stopTimer: 0,
-      t0: 0, elapsed: 0, shoot: null, nextShoot: 1, color0: "255,255,255",
+      stars: [], w: 0, h: 0, raf: 0, transRaf: 0, stopTimer: 0,
+      t0: 0, elapsed: 0, shoot: null, nextShoot: 1,
+      pal0: ["255,255,255"], pal1: ["255,255,255"], palT: 1,
     };
     states.set(btn, st);
 
@@ -198,14 +284,23 @@
     resizer.observe(btn);
   }
 
-  // Repintar al cambiar de tema o al ajustar densidad/velocidad desde fuera
+  /* Cambio de tema: interpolar colores en sincronía con los tokens CSS
+     (no reconstruye las estrellas para no saltar sus posiciones) */
+  const retintAll = () => {
+    for (const btn of states.keys()) {
+      if (!btn.isConnected) { states.delete(btn); continue; }
+      const st = states.get(btn);
+      if (st) startPalTrans(btn, st);
+    }
+  };
+  /* Reconstrucción completa (p. ej. cambio de data-shimmer-colors externo) */
   const repaintAll = () => {
     for (const btn of states.keys()) {
       if (!btn.isConnected) { states.delete(btn); continue; }
       repaint(btn);
     }
   };
-  new MutationObserver(repaintAll).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  new MutationObserver(retintAll).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
   window.addEventListener("vv-stars-refresh", repaintAll);
 
   /* ---------- Arranque + observación del DOM ---------- */

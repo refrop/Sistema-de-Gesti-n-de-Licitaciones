@@ -29,10 +29,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} dark`}>
+    <html
+      lang="es"
+      className={`${geistSans.variable} ${geistMono.variable} dark`}
+      suppressHydrationWarning
+    >
       <body className="antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{if(localStorage.getItem('sisgest-theme')==='light'){var r=document.documentElement;r.classList.add('theme-boot');r.setAttribute('data-theme','light');requestAnimationFrame(function(){requestAnimationFrame(function(){r.classList.remove('theme-boot')})})}}catch(e){}})()",
+          }}
+        />
         {children}
-        <Toaster theme="dark" position="top-right" />
+        <Toaster position="top-right" />
         <Script src="/vv-buttons.js" strategy="afterInteractive" />
       </body>
     </html>

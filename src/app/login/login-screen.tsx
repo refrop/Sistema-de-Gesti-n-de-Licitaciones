@@ -13,6 +13,7 @@ import { fieldErrors, loginSchema } from "@/lib/forms";
 import { NebulaField } from "@/components/atmos/nebula-field";
 import { Divider } from "@/components/atmos/reveal";
 import { SplitLines } from "@/components/atmos/split-lines";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const DEMO_EMAIL = "admin@example.com";
 const DEMO_PASSWORD = "CambiaEstaClave123!";
@@ -138,13 +139,14 @@ export function LoginScreen({ next }: { next: string }) {
   return (
     <div
       ref={screenRef}
-      className="dark login-fallback relative min-h-dvh overflow-hidden text-white"
+      className="login-fallback relative min-h-dvh overflow-hidden text-foreground"
     >
       <NebulaField className="absolute inset-0" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/60" />
+      <ThemeToggle className="absolute top-4 right-4 z-20" />
       <main className="relative z-10 mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6 py-14">
         <div ref={topRef} data-login-top>
-          <p className="mb-3 text-xs font-medium tracking-[0.32em] text-white/50 uppercase">
+          <p className="mb-3 text-xs font-medium tracking-[0.32em] text-foreground/60 uppercase">
             Sistema de gestión
           </p>
           <SplitLines
@@ -152,16 +154,15 @@ export function LoginScreen({ next }: { next: string }) {
             className="font-heading text-4xl leading-[1.05] font-medium tracking-tight sm:text-5xl"
             delay={0.25}
           />
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60">
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-foreground/70">
             Clientes, productos, propuestas y cobros con control total sobre cada etapa del proceso.
           </p>
-          <Divider className="mt-7 mb-7 h-px bg-white/20" delay={0.6} />
+          <Divider className="mt-7 mb-7 h-px bg-foreground/20" delay={0.6} />
         </div>
 
         <div ref={cardRef} data-login-card>
           <Card
-            className="vv-shimmer-btn border-border bg-card/70 py-6 shadow-2xl shadow-black/50 ring-0 backdrop-blur-xl"
-            data-shimmer-colors="221,183,255;183,109,255;123,208,255"
+            className="vv-shimmer-btn vv-oval-glow border-border bg-card/70 py-6 shadow-[0_25px_50px_-12px_var(--shadow-card)] ring-0 backdrop-blur-xl"
           >
             <CardContent>
               <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -204,13 +205,13 @@ export function LoginScreen({ next }: { next: string }) {
           </Card>
         </div>
 
-        <p ref={hintRef} data-login-hint className="mt-4 text-center text-xs text-white/50">
+        <p ref={hintRef} data-login-hint className="mt-4 text-center text-xs text-foreground/60">
           ¿Probando?{" "}
           <button
             type="button"
             onClick={fillDemo}
             disabled={demoTyping}
-            className="font-medium text-white/80 underline underline-offset-4 transition-colors hover:text-white disabled:cursor-default disabled:opacity-60"
+            className="font-medium text-foreground/80 underline underline-offset-4 transition-colors hover:text-foreground disabled:cursor-default disabled:opacity-60"
           >
             Usar credenciales demo
           </button>

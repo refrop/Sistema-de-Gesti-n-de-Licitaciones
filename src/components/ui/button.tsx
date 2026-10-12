@@ -8,7 +8,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "btn-nebula-gradient text-white",
+        default: "btn-nebula-gradient text-primary-foreground",
         outline:
           "border-border bg-card text-foreground hover:border-nebula-violet/40 hover:bg-card aria-expanded:bg-card aria-expanded:text-foreground",
         secondary:

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Gavel, LogOut, Package, Users, UsersRound } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { api, errorMessage } from "@/lib/api";
 import type { SessionUser } from "@/lib/session";
 
@@ -86,7 +87,7 @@ export function Nav({ user }: { user: SessionUser }) {
           href="/tenders"
           className="font-heading text-sm font-semibold tracking-tight whitespace-nowrap"
         >
-          <span className="text-white">Sis</span>
+          <span className="text-foreground">Sis</span>
           <span className="text-nebula-lavender">Gest</span>
         </Link>
         <nav className="relative -mx-1 flex flex-1 items-center gap-1 overflow-x-auto">
@@ -94,7 +95,7 @@ export function Nav({ user }: { user: SessionUser }) {
             <span
               aria-hidden="true"
               className={cn(
-                "pointer-events-none absolute top-0 left-0 rounded-lg border border-nebula-violet/35 bg-nebula-violet/15 shadow-[0_0_18px_-6px_rgba(183,109,255,0.55)]",
+                "pointer-events-none absolute top-0 left-0 rounded-lg border border-nebula-violet/35 bg-nebula-violet/15 shadow-[0_0_18px_-6px_var(--glow-accent)]",
                 ready && "nav-tab-indicator",
               )}
               style={{
@@ -118,8 +119,8 @@ export function Nav({ user }: { user: SessionUser }) {
                 className={cn(
                   "nav-tab relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm whitespace-nowrap transition-colors",
                   active
-                    ? "font-semibold text-white"
-                    : "text-secondary-foreground hover:bg-accent hover:text-white",
+                    ? "font-semibold text-foreground"
+                    : "text-secondary-foreground hover:bg-accent hover:text-foreground",
                 )}
               >
                 <Icon aria-hidden="true" className="nav-tab-icon size-4 shrink-0" />
@@ -129,8 +130,9 @@ export function Nav({ user }: { user: SessionUser }) {
           })}
         </nav>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <div className="hidden text-right leading-tight sm:block">
-            <p className="text-sm font-medium text-white">{user.name}</p>
+            <p className="text-sm font-medium text-foreground">{user.name}</p>
             <p className="font-mono text-[10px] tracking-wider text-nebula-lavender/80 uppercase">
               {user.role === "admin" ? "Administrador" : "Usuario"}
             </p>

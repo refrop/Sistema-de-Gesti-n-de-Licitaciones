@@ -1,6 +1,45 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getTheme, subscribeTheme, type Theme } from "@/lib/theme";
+
+type NebulaPalette = {
+  deep: [number, number, number];
+  a: [number, number, number];
+  b: [number, number, number];
+  c: [number, number, number];
+  edge: number;
+  centerBoost: number;
+  clearAmt: number;
+  tintGain: number;
+  stars: number;
+};
+
+/* Paletas del shader por tema: cósmica (oscuro) y blanco/dorado (light) */
+const PALETTES: Record<Theme, NebulaPalette> = {
+  dark: {
+    deep: [0.023, 0.027, 0.075],
+    a: [0.22, 0.74, 0.97],
+    b: [0.72, 0.42, 1.0],
+    c: [0.85, 0.27, 0.94],
+    edge: 0.5,
+    centerBoost: 1.4,
+    clearAmt: 1.0,
+    tintGain: 1.0,
+    stars: 0.0,
+  },
+  light: {
+    deep: [0.945, 0.925, 0.875],
+    a: [1.0, 0.84, 0.36],
+    b: [0.74, 0.78, 0.9],
+    c: [0.88, 0.56, 0.16],
+    edge: 0.84,
+    centerBoost: 1.05,
+    clearAmt: 0.4,
+    tintGain: 1.5,
+    stars: 1.0,
+  },
+};
 
 const vertexShader = /* glsl */ `
 varying vec2 vUv;
@@ -16,6 +55,15 @@ uniform float uTime;
 uniform vec2 uRes;
 uniform float uHue;
 uniform vec2 uPointer;
+uniform vec3 uDeep;
+uniform vec3 uTintA;
+uniform vec3 uTintB;
+uniform vec3 uTintC;
+uniform float uEdge;
+uniform float uCenterBoost;
+uniform float uClearAmt;
+uniform float uTintGain;
+uniform float uStars;
 
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -61,24 +109,36 @@ void main() {
   float density = n * 0.8 + n2 * 0.5;
   density = smoothstep(0.28, 1.0, density + 0.3 - r * 0.6);
 
-  vec3 cDeep = vec3(0.023, 0.027, 0.075);
-  vec3 cTeal = vec3(0.22, 0.74, 0.97);
-  vec3 cViolet = vec3(0.72, 0.42, 1.0);
-  vec3 cRose = vec3(0.85, 0.27, 0.94);
+  vec3 cDeep = uDeep;
+  vec3 cTeal = uTintA;
+  vec3 cViolet = uTintB;
+  vec3 cRose = uTintC;
   float h = fract(uHue + uTime * 0.0015);
   vec3 tint = mix(cTeal, cViolet, 0.5 + 0.5 * sin(6.2831 * h));
   tint = mix(tint, cRose, 0.3 + 0.3 * sin(6.2831 * (h + 0.37)));
+  tint *= uTintGain;
 
   vec3 col = cDeep + tint * density;
   col += tint * pow(max(density - 0.6, 0.0), 2.0) * 1.8;
 
   vec2 asp = vec2(uRes.x / uRes.y, 1.0);
   vec2 zone = (vUv - 0.5) * asp / vec2(0.55, 0.68);
-  float clear = smoothstep(0.5, 1.35, length(zone));
-  col = mix(cDeep * 1.4, col, clear);
+  float clear = smoothstep(0.5, 1.35, length(zone)) * uClearAmt;
+  col = mix(cDeep * uCenterBoost, col, clear);
 
   float vig = smoothstep(1.5, 0.35, length((vUv - 0.5) * asp * 1.15));
-  col *= 0.5 + 0.5 * vig;
+  col *= mix(uEdge, 1.0, vig);
+
+  /* Destellos: estrellas doradas y plateadas parpadeando (modo claro) */
+  vec2 sCell = floor(gl_FragCoord.xy / 3.5);
+  float sRand = hash(sCell);
+  float sGate = step(0.991, sRand);
+  float sTwinkle = 0.55 + 0.45 * sin(uTime * (1.5 + sRand * 4.0) + sRand * 6.2831);
+  vec2 sLocal = fract(gl_FragCoord.xy / 3.5) - 0.5;
+  float sDot = smoothstep(0.42, 0.05, length(sLocal));
+  vec3 sCol = mix(vec3(0.98, 0.82, 0.38), vec3(0.78, 0.82, 0.95), step(0.55, fract(sRand * 7.31)));
+  col += sCol * sGate * sDot * sTwinkle * uStars;
+
   float grain = hash(gl_FragCoord.xy + fract(uTime * 0.7) * vec2(17.1, 23.7));
   col += (grain - 0.5) * 0.03;
 
@@ -100,6 +160,30 @@ function visitHue(): number {
     return Math.random();
   }
 }
+
+/* Duración/easing canónicos del cambio de tema: idénticos a la transición
+   de tokens en :root (0.65s cubic-bezier(0.4, 0, 0.2, 1)) para que todo
+   lo que esté en pantalla se repinte on sync. */
+const THEME_MS = 650;
+const easeTheme = (() => {
+  const x1 = 0.4, y1 = 0, x2 = 0.2, y2 = 1;
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const sx = (t: number) => ((ax * t + bx) * t + cx) * t;
+  const sy = (t: number) => ((ay * t + by) * t + cy) * t;
+  const dx = (t: number) => (3 * ax * t + 2 * bx) * t + cx;
+  return (x: number) => {
+    let t = x;
+    for (let i = 0; i < 8; i++) {
+      const e = sx(t) - x;
+      if (Math.abs(e) < 1e-5) break;
+      const d = dx(t);
+      if (Math.abs(d) < 1e-7) break;
+      t -= e / d;
+    }
+    return sy(Math.min(Math.max(t, 0), 1));
+  };
+})();
 
 export function NebulaField({ className }: { className?: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -142,11 +226,21 @@ export function NebulaField({ className }: { className?: string }) {
       const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
       camera.position.z = 1;
 
+      const startPalette = PALETTES[getTheme()];
       const uniforms = {
         uTime: { value: 0 },
         uRes: { value: new THREE.Vector2(1, 1) },
         uHue: { value: visitHue() },
         uPointer: { value: new THREE.Vector2(0, 0) },
+        uDeep: { value: new THREE.Color(...startPalette.deep) },
+        uTintA: { value: new THREE.Color(...startPalette.a) },
+        uTintB: { value: new THREE.Color(...startPalette.b) },
+        uTintC: { value: new THREE.Color(...startPalette.c) },
+        uEdge: { value: startPalette.edge },
+        uCenterBoost: { value: startPalette.centerBoost },
+        uClearAmt: { value: startPalette.clearAmt },
+        uTintGain: { value: startPalette.tintGain },
+        uStars: { value: startPalette.stars },
       };
 
       const geometry = new THREE.PlaneGeometry(2, 2);
@@ -203,7 +297,46 @@ export function NebulaField({ className }: { className?: string }) {
       const { gsap } = gsapModule;
       gsap.ticker.add(tick);
 
+      /* Cambio de tema: interpola los uniforms de color con GSAP usando la
+         MISMA duración y easing que los tokens CSS, para que la nebulosa
+         cruce en sincronía con el resto de la pantalla */
+      const tweenColor = (
+        color: { r: number; g: number; b: number; setRGB: (r: number, g: number, b: number) => void },
+        rgb: [number, number, number],
+        animate: boolean,
+      ) => {
+        if (animate) {
+          gsap.to(color, { r: rgb[0], g: rgb[1], b: rgb[2], duration: THEME_MS / 1000, ease: easeTheme, overwrite: "auto" });
+        } else {
+          color.setRGB(rgb[0], rgb[1], rgb[2]);
+        }
+      };
+      const applyPalette = (animate: boolean) => {
+        const palette = PALETTES[getTheme()];
+        tweenColor(uniforms.uDeep.value, palette.deep, animate);
+        tweenColor(uniforms.uTintA.value, palette.a, animate);
+        tweenColor(uniforms.uTintB.value, palette.b, animate);
+        tweenColor(uniforms.uTintC.value, palette.c, animate);
+        const tweens = [
+          { u: uniforms.uEdge, v: palette.edge },
+          { u: uniforms.uCenterBoost, v: palette.centerBoost },
+          { u: uniforms.uClearAmt, v: palette.clearAmt },
+          { u: uniforms.uTintGain, v: palette.tintGain },
+          { u: uniforms.uStars, v: palette.stars },
+        ];
+        for (const { u, v } of tweens) {
+          if (animate) {
+            gsap.to(u, { value: v, duration: THEME_MS / 1000, ease: easeTheme, overwrite: "auto" });
+          } else {
+            u.value = v;
+          }
+        }
+      };
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const unsubscribeTheme = subscribeTheme(() => applyPalette(!reducedMotion.matches));
+
       cleanup = () => {
+        unsubscribeTheme();
         gsap.ticker.remove(tick);
         window.removeEventListener("resize", resize);
         window.removeEventListener("pointermove", onPointer);
