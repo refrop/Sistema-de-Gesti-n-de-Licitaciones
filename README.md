@@ -47,7 +47,7 @@ Gestión de licitaciones de principio a fin: creación de propuestas con product
 | Supabase Storage | — | Subida de PDFs con signed URLs y URL pública verificable como evidencia |
 | Resend / Brevo | 6.32 / — | Correo real con adjunto: SDK `resend` (con `Idempotency-Key`) o Brevo con `fetch` nativo (sin dependencia extra); proveedor elegido con `EMAIL_PROVIDER` (§4) |
 | Vercel | — | Deploy continuo desde GitHub, variables de entorno, health check y Vercel Cron diario (`vercel.json`, 05:00 UTC, disparo automático verificado) |
-| GitHub Actions | — | Workflow de tick (`*/15 * * * *` + `workflow_dispatch`) contra producción, fuera del límite de Vercel Hobby; el botón **Run workflow** funciona y el evento `schedule` dispara de forma best-effort (20 runs `Scheduled` + 1 manual, todos `success`, 08/10-12/10; cadencia real ~4-5 h, ver §8) |
+| GitHub Actions | — | Workflow de tick (`*/15 * * * *` + `workflow_dispatch`) contra producción, fuera del límite de Vercel Hobby; el `schedule` dispara (best-effort) y el botón **Run workflow** permite dispararlo a mano (ver §8) |
 | Vitest | 3.2 | Tests unitarios e de integración contra BD real |
 | Zod | 4.6 | Validación de entrada en routes y `.env` |
 
@@ -346,10 +346,9 @@ sequenceDiagram
 **Orden importa:** se vence primero para no recordar una licitación ya vencida.
 
 **Disparadores en producción:**
-- `vercel.json` → tick diario a las 05:00 UTC (plan Hobby: 1/día con precisión ±59 min); Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente si la variable existe en el proyecto. **Verificado:** el 08/10/2026 a las 05:43:57 UTC resolvió las dos sondas de fase 10 sin intervención manual (ver §12).
-- `.github/workflows/cron.yml` → `curl -fsS -H "Authorization: Bearer $CRON_SECRET"` con `*/15 * * * *` + `workflow_dispatch` (el secreto vive como *repository secret* de GitHub; botón **Run workflow** para dispararlo a mano, ver §12). **El evento `schedule` sí dispara** (best-effort de GitHub: 20 runs `Scheduled` + 1 manual, todos `success`, entre el 08/10 y el 12/10; cadencia real ~4-5 h en vez de cada 15 min). El 10/10 a las 20:39:10 UTC un run `Scheduled` venció una licitación él solo (`vencimiento_automatico`, `userId: null`).
-
-**Nota sobre Brevo e IPs (12/10/2026):** Brevo activa el bloqueo de IPs no autorizadas tras su fase de aprendizaje (30 días) y las IPs de salida de Vercel serverless rotan en cada invocación, así que los recordatorios fallaron con `HTTP 401 unrecognised IP address` (varias IPs: `3.236.x`, `18.234.x`, `98.94.x`, `18.209.x`, `100.53.x`). Solución: desactivar el bloqueo en Brevo (**Settings → Security → Authorized IPs → API keys → Deactivate**); la API key vive solo en las env vars de Vercel. Verificado con tick manual el 12/10/2026 a las **17:57:38 UTC**: `{"expired":0,"reminded":2,"errors":[]}` y ambos `EmailLog(recordatorio → enviado)` con providerId de Brevo (`smtp-relay.mailin.fr`). El job revierte el reclamo ante un fallo, así que los recordatorios pendientes salen solos en el siguiente tick.
+- `vercel.json` → tick diario a las 05:00 UTC (plan Hobby); Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente si la variable existe. Verificado el 08/10/2026 (ver §12).
+- `.github/workflows/cron.yml` → tick por `curl` con el mismo secret (`*/15 * * * *` + `workflow_dispatch`); el `schedule` dispara de forma best-effort (cada pocas horas) y **Run workflow** permite dispararlo a mano. Verificado el 10/10/2026 (ver §12).
+- **Brevo con bloqueo de IP desactivado** (**Settings → Security → Authorized IPs**): las IPs de salida de Vercel serverless rotan en cada invocación, así que el bloqueo rompería los envíos. La API key vive solo en las env vars de Vercel.
 
 ## 9. API
 
@@ -450,7 +449,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" $BASE/api/cron/tick
 | **Sanitizar el nombre de archivo** y validar que el `path` empieza con `tenders/{id}/` | Evita path traversal y que un cliente confirme archivos ajenos | Confiar en el `path` que envía el cliente |
 | **BD antes que Storage** al reemplazar documento: se guarda la referencia nueva y recién ahí se borra la anterior | Una referencia rota es peor que un archivo huérfano en Storage | Borrar primero (ventana con `proposalUrl` colgando) |
 | Bucket `proposals` **público** | La URL del documento debe ser accesible y verificable como evidencia de entrega | Bucket privado + `createSignedUrl` temporal (más seguro, pero la URL no sirve como evidencia persistente) |
-| **Cron externo (GitHub Actions)** en vez de solo Vercel Cron | El plan Hobby de Vercel solo admite ticks diarios y el recordatorio (ventana de 48 h) prefiere granularidad menor. El workflow corre en el repo (público), sin cuenta de terceros, y su historial sirve de evidencia. Estado real: el **Run workflow** manual corre y el `schedule` también dispara (best-effort ~4-5 h; 20 runs `Scheduled` + 1 manual, todos `success`, ver §8), complementando al tick diario de Vercel Cron (05:43:57 UTC) | Depender solo de Vercel Cron sin workflow (sin disparo manual ni historial en Actions) |
+| **Cron externo (GitHub Actions)** en vez de solo Vercel Cron | El plan Hobby de Vercel solo admite ticks diarios y el recordatorio (ventana de 48 h) prefiere granularidad menor. El workflow corre en el repo (público), sin cuenta de terceros, y su historial sirve de evidencia. Ambos disparadores (Vercel Cron + `schedule`/manual de Actions) quedaron verificados en producción (§8, §12) | Depender solo de Vercel Cron sin workflow (sin disparo manual ni historial en Actions) |
 
 ## 11. Pruebas
 
@@ -476,7 +475,7 @@ Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler
 | `money.test.ts` | Conversión a centavos enteros: punto/como de miles, formato `es-PE`, símbolos, vacíos, negativos y sumas sin error de punto flotante |
 | `docs.test.ts` | `/api/openapi.json` público con la lista exacta de rutas (24) y operaciones (28), `security: []` solo en públicas y `401` en las protegidas, Swagger UI en `/api/docs` y que las mutaciones sigan exigiendo sesión |
 
-**No se automatiza:** el correo real (se verifica a mano con las evidencias de §12). El tick de cron **sí** quedó probado en producción de punta a punta: Vercel Cron lo disparó solo (05:43:57 UTC, sondas de §12), el `schedule` de GitHub Actions dispara de forma best-effort (20 runs `Scheduled` + 1 manual, todos `success`; el 10/10 venció una licitación sin intervención) y, tras desactivar el bloqueo de IPs de Brevo, un tick manual envió los recordatorios pendientes (12/10 17:57:38 UTC, ver §8).
+**No se automatiza:** el correo real (se verifica a mano con las evidencias de §12). El cron de producción sí quedó probado de punta a punta: Vercel Cron, `schedule` de GitHub Actions y envío de recordatorios vía Brevo (§8 y §12).
 
 **Frontend (fases 8-9):** cada pantalla se verificó con un smoke E2E en Playwright: login → crear → buscar/filtrar → logout (fase 8) y, en la fase 9, detalle (alta/baja de productos, aviso de presupuesto excedido, 404), documento + envío (rechazo de no-PDF, doble clic = un solo envío), ciclo completo (finalizar → facturar → pago excesivo bloqueado → cobrar) y panel de vencimientos (incluye las próximas, excluye lejanas y borradores), revisando además que no hubiera errores JS ni respuestas 5xx. Los scripts son temporales y no se versionan; la suite automatizada de Vitest sigue siendo solo backend.
 
@@ -492,10 +491,8 @@ Corren contra la **misma BD que usa producción** (`.env` local apunta al pooler
 | `EmailLog` del envío real (providerId `01a116ae-eb87-786f-bdb9-e442a34f0cba`, estado `enviado`) | ✅ verificado en producción |
 | Documento accesible por URL pública (HTTP 200, `application/pdf`) | ✅ [`Propuesta_Evidencia_Fase_5.pdf`](https://tcrjekibvnzjnbxdebto.supabase.co/storage/v1/object/public/proposals/tenders/ec4dda0d-e4d6-4883-bfbb-39fc0c813a41/1791381921609-Propuesta_Evidencia_Fase_5.pdf) |
 | Prueba E2E en producción (checklist del enunciado) | ✅ [`docs/evidencia-e2e.png`](#prueba-e2e-en-producción) |
-| Tick automático sin intervención (recordatorio + vencimiento resueltos en el mismo tick) | ✅ 08/10/2026 **05:43:57 UTC** por Vercel Cron → [`recordatorio`](#tick-automático-recordatorio) y [`vencimiento`](#tick-automático-vencimiento) (`userId: null`, `vencimiento_automatico`) |
-| Vencimiento por `schedule` de GitHub Actions (sin intervención) | ✅ 10/10/2026 **20:39:10 UTC**, 6 s tras el run `Scheduled` #13 (20:39:04) → `perdida` / `vencimiento_automatico` / `userId: null` |
-| Tick manual tras desactivar el bloqueo de IPs de Brevo (recordatorios que venían fallando con HTTP 401) | ✅ 12/10/2026 **17:57:38 UTC** → `{"expired":0,"reminded":2,"errors":[]}` y 2 × `EmailLog(recordatorio → enviado)` con providerId Brevo (`smtp-relay.mailin.fr`) |
-| Workflow de GitHub Actions (tick bajo demanda + schedule) | ✅ [`docs/evidencia-cron-actions.png`](#workflow-de-github-actions) (captura temprana: 1 run manual + 5 `Scheduled`; a 12/10 son 20 `Scheduled` + 1 manual, todos `success`) |
+| Tick automático sin intervención (recordatorio + vencimiento resueltos en el mismo tick) | ✅ 08/10/2026 **05:43:57 UTC** por Vercel Cron → [`recordatorio`](#tick-automático-recordatorio) y [`vencimiento`](#tick-automático-vencimiento) |
+| Cron externo: `schedule` de GitHub Actions (vencimiento sin intervención) + recordatorios vía Brevo | ✅ 10/10 y 12/10/2026 verificados en producción → [`Actions`](#workflow-de-github-actions) |
 | Frontend fase 8 (login, layout, 5 listados + alta) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Frontend fase 9 (detalle, documento + envío, ciclo, panel de vencer) smoke E2E con Playwright | ✅ verificado en local antes de cada commit |
 | Documentación interactiva `/api/docs` + spec público `/api/openapi.json` | ✅ testeado en `docs.test.ts` y verificado en producción |
@@ -542,19 +539,9 @@ Mismo tick — licitación vencida → `perdida` con `userId: null` y `vencimien
 
 ### Workflow de GitHub Actions
 
-Run #1 manual (`workflow_dispatch`) + 5 runs `Scheduled` automáticos, todos `success` (captura temprana; a 12/10/2026 hay 20 runs `Scheduled` + 1 manual, todos `success`, con cadencia real ~4-5 h — el `schedule` dispara de forma best-effort).
+Runs manuales (`workflow_dispatch`) y `Scheduled` del workflow de tick; todos `success`.
 
 <img src="docs/evidencia-cron-actions.png" alt="Workflow de GitHub Actions" width="800">
-
-### Recordatorios tras desactivar el bloqueo de IPs de Brevo
-
-Brevo bloqueó los ticks con `HTTP 401 unrecognised IP address` (las IPs de salida de Vercel rotan). Tras desactivar el bloqueo (**Settings → Security → Authorized IPs → API keys → Deactivate**), tick manual el 12/10/2026 **17:57:38 UTC**:
-
-```json
-{"expired":0,"reminded":2,"errors":[],"time":"2026-10-12T17:57:38.333Z"}
-```
-
-`EmailLog`: 2 × `recordatorio → enviado` con providerId Brevo (`<...@smtp-relay.mailin.fr>`) — los mismos recordatorios que venían fallando desde el 10/10 salieron en el tick siguiente, sin reintentos manuales (el job revierte el reclamo ante un fallo).
 
 ## 13. Limitaciones conocidas y pendientes
 
@@ -562,7 +549,7 @@ Brevo bloqueó los ticks con `HTTP 401 unrecognised IP address` (las IPs de sali
 
 **Limitaciones asumidas hoy:**
 
-- **El `schedule` de GitHub Actions es best-effort:** el evento **sí dispara** (20 runs `Scheduled` + 1 manual, todos `success`, entre el 08/10 y el 12/10; el 10/10 venció una licitación sin intervención), pero GitHub ejecuta las ranuras con retraso variable y la cadencia real observada es de ~4-5 h en lugar de cada 15 min. Es suficiente junto al tick diario de Vercel Cron para la ventana de 48 h del recordatorio. El repository secret `CRON_SECRET` está seteado (se creó por API de GitHub, sin versionar nada). Si se necesita granularidad garantizada, habría que subir la app a un plan con cron más frecuente o usar un proveedor de colas.
+- **El `schedule` de GitHub Actions es best-effort:** dispara, pero con retraso variable (cadencia real de pocas horas en lugar de cada 15 min); junto al tick diario de Vercel es suficiente para la ventana de 48 h del recordatorio.
 - **Endpoints de modificación/borrado** de usuarios, clientes y productos: solo existen listado y creación (`GET`/`POST`).
 - **Fallo parcial del envío** (correo OK + BD caída): mitigado con `Idempotency-Key` (Resend; con Brevo no hay idempotencia en la API), pero no hay cola de reintentos; el `EmailLog` se completa en el siguiente intento.
 - **Resend sin dominio verificado (solo con `EMAIL_PROVIDER=resend`):** remitente `onboarding@resend.dev`; con `EMAIL_REDIRECT_TO` el correo se entrega al titular (destinatario original en el cuerpo y `EmailLog.to_email`), pero llega a Spam. **Por eso existe el segundo proveedor:** con `EMAIL_PROVIDER=brevo` y un remitente individual verificado el correo llega a cualquier cliente sin dominio propio (§4); verificar un dominio en Resend permitiría volver y quitar el redirect.
